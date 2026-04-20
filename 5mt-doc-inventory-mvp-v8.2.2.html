@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5MT Ledger v8.2.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sarabun:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111111; --surface: #1A1A1A; --surface-2: #242424; --surface-3: #2E2E2E;
+    --warm-white: #F0EDE6; --muted: #8A857A; --muted-2: #5A564F;
+    --gold: #C8860A; --gold-dim: #9A6708;
+    --blue: #3A7BD5; --red: #C44545; --green: #6B9E4C; --amber: #D89840;
+    --border: #2A2A2A; --border-strong: #3A3A3A;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--warm-white);
+    font-family: 'Sarabun', sans-serif; font-size: 14px; line-height: 1.5;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+
+  .app { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .big { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.05em; color: var(--warm-white); }
+  .brand .sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.15em; }
+  .topbar-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .topbar-meta span { color: var(--warm-white); }
+
+  .main { display: grid; grid-template-columns: minmax(360px, 440px) 1fr; gap: 0; height: calc(100vh - 59px); overflow: hidden; }
+  @media (max-width: 960px) { .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; } }
+  .pane { overflow-y: auto; height: 100%; }
+  @media (max-width: 960px) { .pane { height: auto; overflow-y: visible; } }
+  .pane-left { background: var(--surface); border-right: 1px solid var(--border); }
+  .pane-right { background: var(--bg); }
+  .pane-head { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 5; }
+  .pane-right .pane-head { background: var(--bg); }
+  .pane-head .title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.05em; }
+  .pane-head .subtitle { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+  .form { padding: 20px 24px 40px; }
+  .field { margin-bottom: 16px; }
+  .field-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+  .field-label .required { color: var(--gold); }
+  .field-label .step { color: var(--gold-dim); font-weight: 500; margin-right: 4px; }
+
+  select, input[type="text"], input[type="number"], input[type="date"] {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--warm-white);
+    font-family: 'Sarabun', sans-serif; font-size: 14px; padding: 10px 12px; border-radius: 2px; outline: none; transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--gold); }
+  select:disabled, input:disabled { opacity: 0.4; cursor: not-allowed; }
+  select { appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%238A857A' d='M6 8L0 0h12z'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 2px; padding: 4px; }
+  .seg-btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 10px 12px; background: transparent; color: var(--muted); border: none; border-radius: 2px; cursor: pointer; text-align: center; transition: all 0.15s; user-select: none;
+  }
+  .seg-btn:hover { color: var(--warm-white); }
+  .seg-btn.active { background: var(--gold); color: var(--bg); font-weight: 500; }
+  .seg-btn .seg-sub { display: block; font-size: 9.5px; margin-top: 2px; opacity: 0.85; font-family: 'Sarabun', sans-serif; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  .slots-section { margin-top: 22px; }
+  .slots-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--warm-white); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .slots-section-title .count { color: var(--muted); font-weight: 400; }
+
+  .slot {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface-2); border: 1px dashed var(--border-strong); border-radius: 2px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .slot:hover, .slot.touched { border-color: var(--gold); background: var(--surface-3); }
+  .slot.filled { border-style: solid; border-color: var(--green); background: rgba(107, 158, 76, 0.06); }
+  .slot.required .slot-icon { color: var(--gold); }
+  .slot.optional .slot-icon { color: var(--muted); }
+  .slot .slot-icon { font-family: 'IBM Plex Mono', monospace; font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
+  .slot .slot-body { flex: 1; min-width: 0; }
+  .slot .slot-label { font-size: 13px; color: var(--warm-white); }
+  .slot .slot-filename { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--green); margin-top: 2px; word-break: break-all; }
+  .slot .slot-hint { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted-2); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .slot .slot-action { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+  .slot.filled .slot-action { color: var(--green); }
+  .slot .gen-pill { background: rgba(58, 123, 213, 0.15); color: var(--blue); padding: 2px 6px; border-radius: 2px; font-size: 9px; margin-right: 6px; }
+
+  .human-note { margin-top: 20px; padding: 12px 14px; background: rgba(200, 134, 10, 0.06); border-left: 3px solid var(--gold); border-radius: 2px; font-size: 12.5px; line-height: 1.55; color: var(--warm-white); }
+  .human-note .hn-label { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gold); margin-bottom: 4px; display: block; }
+
+  .ref-box { background: rgba(58, 123, 213, 0.06); border: 1px solid rgba(58, 123, 213, 0.3); border-radius: 2px; padding: 12px 14px; margin-bottom: 18px; }
+  .ref-box-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--blue); margin-bottom: 8px; }
+
+  .submit-bar { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; margin: 24px -24px -40px; padding-left: 24px; padding-right: 24px; }
+  .submit-btn { flex: 1; background: var(--gold); color: var(--bg); font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.1em; padding: 12px 20px; border: none; border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+  .submit-btn:hover:not(:disabled) { background: var(--warm-white); }
+  .submit-btn:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
+  .submit-status { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; text-align: right; }
+  .submit-status.ready { color: var(--green); }
+
+  .no-category { padding: 40px 24px; text-align: center; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+
+  .filter-bar { padding: 14px 24px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .filter-chip { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--muted); border-radius: 2px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .filter-chip:hover { color: var(--warm-white); border-color: var(--gold); }
+  .filter-chip.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+
+  .txn-list { padding: 12px 24px 60px; }
+  .txn-row { background: var(--surface); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 10px; transition: all 0.15s; overflow: hidden; }
+  .txn-row.dragging { opacity: 0.4; }
+  .txn-row.drop-target { border-color: var(--gold); }
+  .txn-head { padding: 12px 16px; display: grid; grid-template-columns: 26px 80px 1fr auto auto; gap: 12px; align-items: center; cursor: pointer; }
+  .txn-row:hover .txn-head { background: var(--surface-2); }
+  .drag-handle { font-family: 'IBM Plex Mono', monospace; color: var(--muted-2); font-size: 16px; cursor: grab; text-align: center; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .txn-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+  .txn-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .txn-title { font-size: 13.5px; color: var(--warm-white); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-code { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); text-transform: uppercase; }
+  .txn-code .sub-label { color: var(--gold); }
+  .txn-amount { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.03em; text-align: right; white-space: nowrap; }
+  .txn-amount.out { color: var(--red); }
+  .txn-amount.in { color: var(--green); }
+
+  .badge { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 7px; border-radius: 2px; background: var(--surface-3); color: var(--muted); white-space: nowrap; margin-left: 4px; }
+  .badge.complete { background: rgba(107, 158, 76, 0.15); color: var(--green); }
+  .badge.incomplete { background: rgba(196, 69, 69, 0.15); color: var(--red); }
+  .badge.unpaid { background: rgba(216, 152, 64, 0.15); color: var(--amber); }
+  .badge.paid { background: rgba(107, 158, 76, 0.15); color: var(--green); }
+  .badge.refund { background: rgba(196, 69, 69, 0.15); color: var(--red); }
+  .badge.refunded { background: rgba(196, 69, 69, 0.1); color: var(--red); }
+  .badge.accrue { background: rgba(58, 123, 213, 0.15); color: var(--blue); }
+
+  .txn-detail { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; border-top: 0 solid var(--border); background: var(--bg); }
+  .txn-row.expanded .txn-detail { max-height: 2000px; border-top-width: 1px; }
+  .txn-detail-inner { padding: 14px 16px 16px 54px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .detail-item .k { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 3px; }
+  .detail-item .v { font-size: 13px; color: var(--warm-white); }
+  .detail-item .v.ref { color: var(--gold); font-family: 'IBM Plex Mono', monospace; cursor: pointer; }
+  .detail-item .v.ref:hover { text-decoration: underline; }
+
+  .detail-slots-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 12px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+  .detail-slots-title .hint { color: var(--muted-2); text-transform: none; font-size: 10px; letter-spacing: 0; font-style: italic; }
+  .detail-slot-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 2px; margin-bottom: 4px;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .detail-slot-row.missing.actionable { border-color: rgba(196, 69, 69, 0.3); background: rgba(196, 69, 69, 0.03); }
+  .detail-slot-row .ds-icon { font-family: 'IBM Plex Mono', monospace; font-size: 10px; width: 14px; flex-shrink: 0; }
+  .detail-slot-row.req .ds-icon { color: var(--gold); }
+  .detail-slot-row.opt .ds-icon { color: var(--muted-2); }
+  .detail-slot-row .ds-label { flex: 1; color: var(--warm-white); min-width: 0; }
+  .detail-slot-row .ds-file { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--green); word-break: break-all; text-align: right; max-width: 45%; }
+  .detail-slot-row .ds-gen-tag { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--blue); background: rgba(58, 123, 213, 0.1); padding: 2px 5px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+  .mini-btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 4px 8px;
+    background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--warm-white);
+    border-radius: 2px; cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .mini-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .mini-btn.gen:hover { border-color: var(--blue); color: var(--blue); }
+
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .action-btn { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border-strong); color: var(--warm-white); border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+  .action-btn.refund:hover { border-color: var(--red); color: var(--red); }
+  .action-btn.pay:hover { border-color: var(--blue); color: var(--blue); }
+
+  .inline-form { margin-top: 14px; padding: 14px 16px; border-radius: 2px; }
+  .inline-form.refund { background: rgba(196, 69, 69, 0.04); border: 1px solid rgba(196, 69, 69, 0.3); }
+  .inline-form.pay { background: rgba(58, 123, 213, 0.04); border: 1px solid rgba(58, 123, 213, 0.3); }
+  .inline-form.hidden { display: none; }
+  .inline-form-title { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .inline-form.refund .inline-form-title { color: var(--red); }
+  .inline-form.pay .inline-form-title { color: var(--blue); }
+  .inline-form-close { cursor: pointer; font-size: 14px; color: var(--muted); background: none; border: none; padding: 0; }
+  .inline-form-close:hover { color: var(--warm-white); }
+  .inline-form .field { margin-bottom: 12px; }
+  .inline-submit-bar { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+  .inline-submit-bar .submit-status { flex: 1; text-align: left; }
+  .inline-submit-btn { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 0.1em; padding: 10px 20px; border: none; border-radius: 2px; cursor: pointer; transition: all 0.15s; color: var(--warm-white); }
+  .inline-form.refund .inline-submit-btn { background: var(--red); }
+  .inline-form.pay .inline-submit-btn { background: var(--blue); }
+  .inline-submit-btn:hover:not(:disabled) { background: var(--warm-white); color: var(--bg); }
+  .inline-submit-btn:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
+
+  .empty-state { padding: 60px 24px; text-align: center; color: var(--muted); }
+  .empty-state .big { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--surface-3); letter-spacing: 0.04em; }
+  .empty-state .small { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 6px; }
+
+  .mvp-note { position: fixed; bottom: 16px; right: 16px; background: var(--surface); border: 1px solid var(--gold); border-radius: 2px; padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; z-index: 10; max-width: 260px; }
+  .mvp-note .hint { color: var(--muted); margin-top: 3px; text-transform: none; letter-spacing: 0; font-family: 'Sarabun', sans-serif; font-size: 11px; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(--surface); border: 1px solid var(--green); color: var(--green); font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; padding: 10px 20px; border-radius: 2px; z-index: 100; transition: transform 0.3s ease; pointer-events: none; max-width: 80%; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+  .toast.gen { border-color: var(--blue); color: var(--blue); }
+
+  /* ============ Topbar button ============ */
+  .topbar-btn { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--warm-white); border-radius: 2px; cursor: pointer; transition: all 0.15s; margin-right: 12px; }
+  .topbar-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ============ Party Picker (in form) ============ */
+  .party-box { background: rgba(200, 134, 10, 0.04); border: 1px solid rgba(200, 134, 10, 0.3); border-radius: 2px; padding: 12px 14px; margin-bottom: 16px; }
+  .party-box-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .party-selected { padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 2px; font-size: 12.5px; }
+  .party-selected .p-name { color: var(--warm-white); font-weight: 500; }
+  .party-selected .p-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .party-selected .p-related { color: var(--amber); margin-left: 6px; }
+  .link-btn { background: none; border: none; color: var(--gold); font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; padding: 2px 4px; }
+  .link-btn:hover { text-decoration: underline; }
+
+  /* ============ Amount Preset Picker (v8.2) ============ */
+  .amount-with-preset { position: relative; }
+  .amount-with-preset .preset-picker-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .amount-with-preset .preset-picker { flex: 1; font-size: 12px; padding: 6px 28px 6px 10px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'><path fill='%238A857A' d='M6 8L0 0h12z'/></svg>"); background-position: right 10px center; }
+  .amount-with-preset .preset-add-link { flex-shrink: 0; }
+
+  /* ============ Preset Registry (v8.2 · clone of .party-*) ============ */
+  .preset-list { margin-top: 14px; }
+  .preset-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 8px; }
+  .preset-row .pr-icon { font-size: 18px; color: var(--muted); flex-shrink: 0; }
+  .preset-row .pr-body { flex: 1; min-width: 0; }
+  .preset-row .pr-name-row { color: var(--warm-white); font-weight: 500; font-size: 14px; }
+  .preset-row .pr-amount { color: var(--gold); font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-left: 8px; }
+  .preset-row .pr-meta-row { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .preset-row .pr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .preset-form { background: var(--surface-2); border: 1px solid var(--gold); border-radius: 2px; padding: 14px 16px; margin-top: 12px; }
+  .preset-form-title { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); margin-bottom: 12px; }
+
+  /* ============ Modal (overlay) ============ */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border-strong); border-radius: 2px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-head { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); display: flex; justify-content: space-between; align-items: center; z-index: 1; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.05em; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 4px; }
+  .modal-close:hover { color: var(--warm-white); }
+  .modal-body { padding: 20px 24px 24px; }
+
+  /* ============ Party Registry List ============ */
+  .party-list { margin-top: 14px; }
+  .party-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 8px; }
+  .party-row .p-icon { font-size: 18px; color: var(--muted); flex-shrink: 0; }
+  .party-row .p-body { flex: 1; min-width: 0; }
+  .party-row .p-name-row { color: var(--warm-white); font-weight: 500; font-size: 14px; }
+  .party-row .p-nickname { color: var(--gold); font-size: 12px; margin-left: 8px; }
+  .party-row .p-related-badge { background: rgba(216, 152, 64, 0.15); color: var(--amber); padding: 2px 6px; border-radius: 2px; font-size: 9.5px; font-family: 'IBM Plex Mono', monospace; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .party-row .p-meta-row { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .party-row .p-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .party-form { background: var(--surface-2); border: 1px solid var(--gold); border-radius: 2px; padding: 14px 16px; margin-top: 12px; }
+  .party-form-title { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); margin-bottom: 12px; }
+  .party-type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-3); padding: 4px; border-radius: 2px; }
+  .party-type-toggle .t-btn { padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; background: transparent; border: none; color: var(--muted); border-radius: 2px; cursor: pointer; }
+  .party-type-toggle .t-btn.active { background: var(--gold); color: var(--bg); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 13px; color: var(--warm-white); }
+  .checkbox-row input[type="checkbox"] { accent-color: var(--gold); width: 16px; height: 16px; cursor: pointer; }
+
+  /* ============ File Viewer Modal ============ */
+  .viewer-modal { max-width: 1100px; }
+  .viewer-body { padding: 0; background: #000; display: flex; align-items: center; justify-content: center; min-height: 400px; max-height: 80vh; overflow: auto; }
+  .viewer-body img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+  .viewer-body iframe { width: 100%; height: 80vh; border: none; }
+  .viewer-body .no-preview { padding: 60px 24px; text-align: center; color: var(--muted); }
+  .viewer-body .no-preview .big { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--surface-3); }
+  .viewer-body .no-preview .small { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 10px; }
+  .viewer-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+  .viewer-filename { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); word-break: break-all; }
+  .viewer-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* ============ Detail slot action buttons (multi-button row) ============ */
+  .ds-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .ds-file-btn { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 8px; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--warm-white); border-radius: 2px; cursor: pointer; transition: all 0.15s; }
+  .ds-file-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .ds-file-btn.download:hover { border-color: var(--green); color: var(--green); }
+  .ds-file-btn.replace:hover { border-color: var(--amber); color: var(--amber); }
+  .detail-slot-row.filled { background: rgba(107, 158, 76, 0.03); }
+  .detail-slot-row .ds-file-wrap { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; align-items: flex-end; }
+.tf-opt { padding: 8px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--warm-white); font-family: 'Sarabun', sans-serif; }
+.tf-opt:hover { background: var(--bg); color: var(--gold); }
+.tf-opt:last-child { border-bottom: none; }
+#dirty-banner, #readonly-banner { display: none; }
+#dirty-banner.show, #readonly-banner.show { display: flex !important; }
+
+  /* ==================================================== */
+  /* v7.1 UX POLISH                                       */
+  /* ==================================================== */
+  /* P1 — Border-left IN/OUT */
+  .txn-row[data-dir="in"]  { border-left: 3px solid #4a8f6b; }
+  .txn-row[data-dir="out"] { border-left: 3px solid #c86a4a; }
+
+  /* P2 — Stream A/B badges */
+  .badge.stream-a { background: rgba(200, 134, 10, 0.15); color: #C8860A; border: 1px solid rgba(200, 134, 10, 0.35); }
+  .badge.stream-b { background: rgba(58, 123, 213, 0.15); color: #3A7BD5; border: 1px solid rgba(58, 123, 213, 0.35); }
+
+  /* P3 — Font size scale (selective, calc-based) */
+  html.fs-s  { --fs-scale: 0.70; }
+  html.fs-m  { --fs-scale: 1.00; }
+  html.fs-l  { --fs-scale: 1.27; }
+  html.fs-xl { --fs-scale: 1.60; }
+  .txn-title     { font-size: calc(13.5px * var(--fs-scale, 1)); }
+  .txn-code      { font-size: calc(10.5px * var(--fs-scale, 1)); }
+  .badge         { font-size: calc(9.5px  * var(--fs-scale, 1)); }
+  .detail-item .k{ font-size: calc(9.5px  * var(--fs-scale, 1)); }
+  .detail-item .v{ font-size: calc(13px   * var(--fs-scale, 1)); }
+  .filter-chip   { font-size: calc(10.5px * var(--fs-scale, 1)); }
+  .field-label   { font-size: calc(10.5px * var(--fs-scale, 1)); }
+  .modal-body    { font-size: calc(14px   * var(--fs-scale, 1)); }
+
+  /* P3 — FS toggle buttons in topbar */
+  .fs-group { display: inline-flex; gap: 2px; margin-right: 12px; border: 1px solid var(--border-strong); border-radius: 2px; overflow: hidden; }
+  .fs-btn { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 9px; background: var(--surface-2); border: none; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .fs-btn:hover { color: var(--warm-white); }
+  .fs-btn.active { background: var(--gold); color: var(--bg); }
+
+  /* P5 — Mode indicator */
+  .mode-indicator { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 8px; border-radius: 2px; margin-right: 12px; }
+  .mode-indicator.mode-edit { background: rgba(107, 158, 76, 0.15); color: var(--green); border: 1px solid rgba(107, 158, 76, 0.4); }
+  .mode-indicator.mode-ro   { background: rgba(214, 69, 69, 0.15); color: #d64545; border: 1px solid rgba(214, 69, 69, 0.4); }
+
+  /* ==================================================== */
+  /* v8.0 ARCHITECTURAL REFACTOR                          */
+  /* ==================================================== */
+
+  /* Sub-card (child rows inside parent detail) */
+  .sub-card-section { margin-top: 12px; padding: 10px 12px; background: var(--bg); border: 1px dashed var(--surface-3); border-radius: 2px; }
+  .sub-card-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .sub-card-section-title .count { font-weight: 400; }
+  .sub-card { display: grid; grid-template-columns: 80px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 6px; font-size: 12px; }
+  .sub-card .sc-date { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); }
+  .sub-card .sc-body { min-width: 0; }
+  .sub-card .sc-id { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--gold); cursor: pointer; }
+  .sub-card .sc-id:hover { text-decoration: underline; }
+  .sub-card .sc-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; word-break: break-all; }
+  .sub-card .sc-slots { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+  .sub-card .sc-slots.warn { color: var(--amber); }
+  .sub-card .sc-slots.ok { color: var(--green); }
+  .sub-card .sc-amount { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.02em; text-align: right; white-space: nowrap; }
+  .sub-card .sc-amount.out { color: var(--red); }
+  .sub-card .sc-amount.in { color: var(--green); }
+
+  /* Slot delete × button */
+  .ds-file-btn.del { color: var(--muted); border-color: var(--border-strong); }
+  .ds-file-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+  /* Card action: edit / delete row */
+  .action-btn.edit:hover { border-color: var(--blue); color: var(--blue); }
+  .action-btn.delete { color: #d89888; }
+  .action-btn.delete:hover { border-color: var(--red); color: var(--red); background: rgba(196, 69, 69, 0.06); }
+
+  /* Toast: warn variant (4s) + undo toast (separate) */
+  .toast.warn { border-color: var(--amber); color: var(--amber); }
+
+  .undo-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--surface); border: 1px solid var(--amber); color: var(--warm-white); font-size: 12.5px; padding: 10px 16px; border-radius: 2px; z-index: 110; transition: transform 0.3s ease; display: flex; align-items: center; gap: 12px; max-width: 90%; }
+  .undo-toast.show { transform: translateX(-50%) translateY(0); }
+  .undo-toast .ut-msg { color: var(--warm-white); }
+  .undo-toast .ut-msg .fname { font-family: 'IBM Plex Mono', monospace; color: var(--amber); margin: 0 4px; }
+  .undo-toast .ut-btn { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 12px; background: var(--amber); color: var(--bg); border: none; border-radius: 2px; cursor: pointer; font-weight: 600; }
+  .undo-toast .ut-btn:hover { background: var(--warm-white); }
+  .undo-toast .ut-countdown { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  /* Edit / Delete row modals */
+  .edit-row-modal .modal, .delete-row-modal .modal { max-width: 560px; }
+  .delete-row-body { padding: 20px 24px; }
+  .delete-row-summary { padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 2px; margin-bottom: 16px; font-size: 13px; }
+  .delete-row-summary .dr-title { color: var(--warm-white); font-weight: 500; margin-bottom: 4px; }
+  .delete-row-summary .dr-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .delete-row-cascade { padding: 12px 14px; background: rgba(196, 69, 69, 0.06); border: 1px solid rgba(196, 69, 69, 0.35); border-radius: 2px; margin-bottom: 16px; font-size: 12.5px; color: var(--warm-white); line-height: 1.55; }
+  .delete-row-cascade .dr-cascade-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--red); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; display: block; }
+  .delete-row-cascade ul { margin: 6px 0 0; padding-left: 20px; }
+  .delete-row-cascade li { margin-bottom: 2px; }
+  .delete-row-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .delete-confirm-btn { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 18px; background: var(--red); color: var(--warm-white); border: none; border-radius: 2px; cursor: pointer; font-weight: 600; }
+  .delete-confirm-btn:hover { background: #a53838; }
+  .delete-confirm-btn:disabled { background: var(--surface-3); color: var(--muted-2); cursor: not-allowed; }
+
+
+  /* v8.1 — Filter 3-row layout */
+  .filter-bar-v81 { padding: 10px 24px 4px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .filter-row { display: flex; gap: 10px; align-items: flex-start; }
+  .filter-row-label { flex: 0 0 108px; padding: 6px 0; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
+  .filter-row-chips { flex: 1; display: flex; gap: 6px; flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .filter-row { flex-direction: column; gap: 4px; }
+    .filter-row-label { flex: 0 0 auto; padding: 0; }
+  }
+
+  /* v8.1 — Gen L2 button bar */
+  .gen-l2-bar { padding: 10px 0 12px; border-bottom: 1px dashed var(--border); margin-bottom: 14px; }
+  .gen-l2-btn { font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 16px; background: linear-gradient(135deg, var(--gold), #E5B548); color: var(--bg); border: none; border-radius: 2px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .gen-l2-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(200, 134, 10, 0.3); }
+  .gen-l2-btn:active { transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="big">5MT DOC INVENTORY</span>
+      <span class="sub">V2 · MVP v8.0</span>
+      <span class="mode-indicator mode-edit" id="mode-indicator">🟢 EDIT</span>
+    </div>
+    <div class="topbar-meta">
+      <span class="fs-group" role="group" aria-label="Font size">
+        <button class="fs-btn" data-fs="s"  title="Small 70%">S</button>
+        <button class="fs-btn" data-fs="m"  title="Medium 100%">M</button>
+        <button class="fs-btn" data-fs="l"  title="Large 127%">L</button>
+        <button class="fs-btn" data-fs="xl" title="X-Large 160%">XL</button>
+      </span>
+      <button class="topbar-btn" id="open-party-registry">👥 Party Registry <span id="party-count">0</span></button>
+      <button class="topbar-btn" id="open-preset-registry">💰 Amount Preset <span id="preset-count">0</span></button>
+      Transactions <span id="txn-count">0</span> · Incomplete <span id="incomplete-count">0</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT — UPLOAD FORM -->
+    <div class="pane pane-left">
+      <div class="pane-head">
+        <div class="title">บันทึก Transaction</div>
+        <div class="subtitle">Cascade: Stream → Direction → Category → Sub-label → Date</div>
+      </div>
+
+      <div class="form">
+
+        <div class="field">
+          <label class="field-label"><span><span class="step">1.</span>Stream <span class="required">*</span></span></label>
+          <div class="segmented" id="f-stream">
+            <button type="button" class="seg-btn" data-val="A">A<span class="seg-sub">THAI FOREX ELITE</span></button>
+            <button type="button" class="seg-btn" data-val="B">B<span class="seg-sub">แป๋ง 40(8)</span></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><span><span class="step">2.</span>Direction <span class="required">*</span></span></label>
+          <div class="segmented" id="f-direction">
+            <button type="button" class="seg-btn" data-val="IN" disabled>IN<span class="seg-sub">รับเงิน</span></button>
+            <button type="button" class="seg-btn" data-val="OUT" disabled>OUT<span class="seg-sub">จ่ายเงิน</span></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label"><span><span class="step">3.</span>Category <span class="required">*</span></span></label>
+          <select id="f-category" disabled>
+            <option value="">— รอเลือก Stream + Direction —</option>
+          </select>
+        </div>
+
+        <div class="field" id="f-sublabel-wrap" style="display:none;">
+          <label class="field-label"><span><span class="step">4.</span>Sub-label</span></label>
+          <select id="f-sublabel"></select>
+          <input type="text" id="f-sublabel-custom" placeholder="พิมพ์เอง..." style="display:none; margin-top:8px;">
+        </div>
+
+        <div class="party-box" id="f-party-wrap" style="display:none;">
+          <div class="party-box-title">
+            <span id="f-party-label">👥 Party</span>
+            <button type="button" class="link-btn" id="f-party-add-new">+ เพิ่ม Party ใหม่</button>
+          </div>
+          <select id="f-party-select" style="width:100%;">
+            <option value="">— เลือก Party —</option>
+          </select>
+          <div id="f-party-selected-info" style="margin-top:8px; display:none;"></div>
+        </div>
+
+        <div class="ref-box" id="f-ref-accrue-wrap" style="display:none;">
+          <div class="ref-box-title">🔗 เลือก ACCRUE ต้นทาง</div>
+          <div class="field" style="margin-bottom:0;">
+            <label class="field-label"><span>Ref Accrue Row ID <span class="required">*</span></span></label>
+            <select id="f-ref-accrue-row-id"><option value="">— เลือก ACCRUE ที่ยังไม่จ่าย —</option></select>
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label class="field-label"><span><span class="step">5.</span>Date <span class="required">*</span></span></label>
+            <input type="date" id="f-date">
+          </div>
+          <div class="field">
+            <label class="field-label"><span>Amount <span class="required">*</span></span></label>
+            <div class="amount-with-preset">
+              <input type="number" id="f-amount" placeholder="0.00" step="0.01">
+              <div class="preset-picker-row">
+                <select class="preset-picker" id="f-amount-preset"><option value="">— เลือก Preset —</option></select>
+                <button type="button" class="link-btn preset-add-link" data-preset-add-for="f-amount">+ เพิ่ม Preset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="slots-area">
+          <div class="no-category">รอเลือก category เพื่อดู file slots</div>
+        </div>
+
+        <div id="human-note-area"></div>
+
+        <div class="submit-bar">
+          <button class="submit-btn" id="submit-btn" disabled>บันทึก Transaction</button>
+          <div class="submit-status" id="submit-status">เริ่มจาก<br>เลือก Stream</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT — COMMAND CENTER -->
+    <div class="pane pane-right">
+      <div class="pane-head">
+        <div class="title">Command Center</div>
+        <div class="subtitle">Click card → Upload/Gen/Refund/Pay ในการ์ดได้เลย</div>
+      </div>
+
+      <!-- v8.1: Filter 3-row (time × stream × status) -->
+      <div class="filter-bar-v81">
+        <div class="filter-row">
+          <div class="filter-row-label">📅 ช่วงเวลา</div>
+          <div class="filter-row-chips">
+            <div class="filter-chip time-chip active" data-time="all">ทั้งหมด</div>
+            <div class="filter-chip time-chip" data-time="today">วันนี้</div>
+            <div class="filter-chip time-chip" data-time="yesterday">เมื่อวาน</div>
+            <div class="filter-chip time-chip" data-time="7d">7 วัน</div>
+            <div class="filter-chip time-chip" data-time="thisMonth">เดือนนี้</div>
+            <div class="filter-chip time-chip" data-time="lastMonth">เดือนที่แล้ว</div>
+            <div class="filter-chip time-chip" data-time="thisYear">ปีนี้</div>
+            <div class="filter-chip time-chip" data-time="custom">กำหนดเอง 📅</div>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-row-label">🏢 สายธุรกิจ</div>
+          <div class="filter-row-chips">
+            <div class="filter-chip stream-chip active" data-stream="all">ทั้งหมด</div>
+            <div class="filter-chip stream-chip" data-stream="A">A บริษัท</div>
+            <div class="filter-chip stream-chip" data-stream="B">B แป๋ง</div>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-row-label">📋 สถานะ</div>
+          <div class="filter-row-chips">
+            <div class="filter-chip status-chip" data-status="complete">เอกสารครบ</div>
+            <div class="filter-chip status-chip" data-status="incomplete">เอกสารยังไม่ครบ</div>
+            <div class="filter-chip status-chip" data-status="accrue">ตั้งหนี้</div>
+            <div class="filter-chip status-chip" data-status="unpaid">ยังไม่จ่าย</div>
+            <div class="filter-chip status-chip" data-status="hasVat">มี VAT</div>
+            <div class="filter-chip status-chip" data-status="hasWht">มี WHT</div>
+            <div class="filter-chip status-chip" data-status="loan">เงินกู้</div>
+            <div class="filter-chip status-chip" data-status="refund">ลูกค้าขอคืนเงิน</div>
+          </div>
+        </div>
+      </div>
+      <div id="custom-date-popover" style="display:none; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--gold); border-radius: 2px; margin-bottom: 12px; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold);">📅 Custom Range</span>
+        <input type="date" id="custom-date-start" style="flex: 0 0 auto; min-width: 140px;">
+        <span style="color: var(--muted);">→</span>
+        <input type="date" id="custom-date-end" style="flex: 0 0 auto; min-width: 140px;">
+        <button class="ds-file-btn" id="custom-date-apply" style="padding: 6px 12px;">Apply</button>
+        <button class="ds-file-btn" id="custom-date-clear" style="padding: 6px 12px;">Clear</button>
+      </div>
+
+      <div id="dirty-banner" style="display: none; position: sticky; top: 0; z-index: 50; background: #3a2e10; border: 1px solid var(--gold); border-radius: 2px; padding: 10px 14px; margin-bottom: 12px; align-items: center; gap: 12px; font-size: 13px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); flex: 1;">⚠ ยังไม่ Save · <span class="dirty-count">0</span> changes</span>
+        <button class="ds-file-btn" id="save-now-btn" style="padding: 6px 14px; background: var(--gold); color: #111; border: none; font-weight: 600; cursor: pointer;">💾 Save ตอนนี้</button>
+      </div>
+
+      <div id="readonly-banner" style="display: none; position: sticky; top: 0; z-index: 50; background: #2e1a1a; border: 1px solid #d64545; border-radius: 2px; padding: 10px 14px; margin-bottom: 12px; align-items: center; gap: 12px; font-size: 13px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #d64545; flex: 1;">🔒 READ-ONLY · Tab อื่นกำลังแก้ข้อมูล</span>
+        <button class="ds-file-btn" id="take-over-btn" style="padding: 6px 14px; cursor: pointer;">Take Over</button>
+      </div>
+
+      <div id="txn-list" class="txn-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="mvp-note">
+  MVP v8.0 · Architectural Refactor
+  <div class="hint">v8.0: soft-required + parent/child + CRUD + auto-link · v8.1 = filter/wording/gen L2</div>
+</div>
+
+<!-- Party Registry Modal -->
+<div class="modal-overlay" id="party-registry-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">👥 Party Registry</div>
+      <button class="modal-close" data-close-modal="party-registry-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+        จัดการ party สำหรับออกเอกสารภาษี (ใบ 50 ทวิ, Invoice, สัญญา)<br>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em;">related party = พ่อ/แม่/ตัวเอง/บริษัทในเครือ</span>
+      </div>
+      <button class="action-btn" id="add-party-btn" style="margin-top: 10px;">⊕ เพิ่ม Party ใหม่</button>
+      <div id="party-form-area"></div>
+      <div class="party-list" id="party-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Preset Registry Modal (v8.2) -->
+<div class="modal-overlay" id="preset-registry-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">💰 Amount Preset Registry</div>
+      <button class="modal-close" data-close-modal="preset-registry-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size: 13px; color: var(--muted); margin-bottom: 8px;">
+        จัดการยอดเงินที่กรอกซ้ำบ่อย (subscription, ค่าบริการประจำ)<br>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em;">global library · ไม่ผูก party / category</span>
+      </div>
+      <button class="action-btn" id="add-preset-btn" style="margin-top: 10px;">⊕ เพิ่ม Preset ใหม่</button>
+      <div id="preset-form-area"></div>
+      <div class="preset-list" id="preset-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- File Viewer Modal -->
+<div class="modal-overlay" id="file-viewer-modal">
+  <div class="modal viewer-modal">
+    <div class="modal-head">
+      <div class="modal-title" id="viewer-slot-label">File Preview</div>
+      <button class="modal-close" data-close-modal="file-viewer-modal">✕</button>
+    </div>
+    <div class="viewer-body" id="viewer-body"></div>
+    <div class="viewer-footer">
+      <div class="viewer-filename" id="viewer-filename"></div>
+      <div class="viewer-actions">
+        <button class="ds-file-btn download" id="viewer-download-btn">⬇ Download</button>
+        <button class="ds-file-btn" id="viewer-drive-btn">🔗 Open in Drive</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- v8.0 Edit Row Modal -->
+<div class="modal-overlay edit-row-modal" id="edit-row-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">✏ แก้ไขรายการ</div>
+      <button class="modal-close" data-close-modal="edit-row-modal">✕</button>
+    </div>
+    <div class="modal-body-slot"></div>
+  </div>
+</div>
+
+<!-- v8.0 Delete Row Modal -->
+<div class="modal-overlay delete-row-modal" id="delete-row-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🗑 ลบรายการ?</div>
+      <button class="modal-close" data-close-modal="delete-row-modal">✕</button>
+    </div>
+    <div class="modal-body-slot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================================
+// SLOT metadata convention:
+//   { id, label, gen: true }   — gen=true → self-issued, show "Gen" button
+//   (no gen)                   — external doc, only "Upload" button
+// ============================================================================
+const CAT = {
+  // ════ Stream A Revenue (2) ════
+  'A-REV-BOOK': {
+    stream: 'A', direction: 'IN', group: 'Revenue',
+    label_th: 'ขายตำรา', vat: 0,
+    required: [
+      { id: 'receipt_issued', label: 'ใบเสร็จ/Receipt (ระบุ "ตำรา")', gen: true },
+      { id: 'slip_received', label: 'Slip รับเงินจากลูกค้า' }
+    ],
+    optional: [
+      { id: 'sales_page', label: 'Sales page screenshot' },
+      { id: 'email_confirm', label: 'Email confirm ส่งไฟล์' }
+    ],
+    sub_label_presets: ['ชุดตำราระบบเทรด LSS'],
+    human_note: 'ตำราวรรณกรรม · VAT 0% · ระบุคำ "ตำรา" ไม่ใช่ "คอร์ส" (ผิด → VAT 7% + เบี้ยปรับ 2x)',
+    requires_counterparty: true, counterparty_label: 'ชื่อ-นามสกุลลูกค้า',
+    refundable: true
+  },
+  'A-REV-COURSE': {
+    stream: 'A', direction: 'IN', group: 'Revenue',
+    label_th: 'ขายคอร์ส/บริการ Subscription', vat: 7,
+    required: [
+      { id: 'tax_invoice', label: 'ใบกำกับภาษี (VAT 7%)', gen: true },
+      { id: 'slip_received', label: 'Slip รับเงิน' }
+    ],
+    optional: [{ id: 'course_content', label: 'เนื้อหาคอร์ส' }],
+    sub_label_presets: ['7ST', 'ATM', 'AOH'],
+    human_note: 'ห้ามออกใบเดียวรวมกับตำรา → contaminate VAT exempt',
+    requires_counterparty: true, counterparty_label: 'ชื่อ-นามสกุลลูกค้า',
+    refundable: true
+  },
+
+  // ════ Stream A Revenue Refund (2) — hidden from main dropdown ════
+  'A-REV-BOOK-REFUND': {
+    stream: 'A', direction: 'OUT', group: 'Revenue Refund', hidden: true,
+    label_th: 'คืนเงินค่าตำรา', vat: 0,
+    required: [
+      { id: 'refund_slip', label: 'Slip โอนคืน' }
+    ],
+    optional: [
+      { id: 'refund_request', label: 'คำร้องขอเงินคืน (email/LINE/form)' }
+    ],
+    requires_ref_row_id: true,
+    requires_refund_reason: true,
+    human_note: 'Contra-revenue · ref_row_id ชี้ไป row เดิม · chargeback ใช้ refund_reason="chargeback"'
+  },
+  'A-REV-COURSE-REFUND': {
+    stream: 'A', direction: 'OUT', group: 'Revenue Refund', hidden: true,
+    label_th: 'คืนเงินค่าคอร์ส', vat: 7,
+    required: [
+      { id: 'refund_slip', label: 'Slip โอนคืน' },
+      { id: 'credit_note', label: 'ใบลดหนี้ (Credit Note)', gen: true }
+    ],
+    optional: [
+      { id: 'refund_request', label: 'คำร้องขอเงินคืน' }
+    ],
+    requires_ref_row_id: true,
+    requires_refund_reason: true,
+    human_note: 'ต้องออกใบลดหนี้เพื่อลด Output VAT · ส่งสรรพากรเดือนที่คืน'
+  },
+
+  // ════ Stream A Expense - Marketing (2) ════
+  'A-EXP-ADS': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Marketing',
+    label_th: 'โฆษณา', vat: 0,
+    required: [
+      { id: 'invoice', label: 'Invoice จาก ad platform (ชื่อบริษัท)' },
+      { id: 'statement', label: 'Slip บัตรเครดิต/statement' }
+    ],
+    optional: [{ id: 'pp36', label: 'ภ.พ.36 (ถ้า invoice ไม่มี VAT)', gen: true }],
+    sub_label_presets: ['Meta Ads', 'Google Ads', 'TikTok Ads', 'YouTube Ads', 'LINE Ads'],
+    human_note: 'Invoice ชื่อบุคคล = ตัดทิ้ง · Meta/Google 2026 เก็บ VAT แล้ว = ส่วนใหญ่ไม่ต้อง ภ.พ.36'
+  },
+  'A-EXP-SUB': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Marketing',
+    label_th: 'Subscription tools', vat: 0,
+    required: [
+      { id: 'invoice', label: 'Invoice จาก service provider (ชื่อบริษัท)' },
+      { id: 'slip', label: 'หลักฐานการจ่าย' }
+    ],
+    optional: [{ id: 'account_screenshot', label: 'Screenshot account ชื่อบริษัท' }],
+    sub_label_presets: ['Canva', 'Claude Max', 'INC Funnels', 'Google AI Pro', 'Meta Verified', 'TradingView', 'OneDrive', 'iQIYI', 'YouTube Premium', 'Shapo', 'Chatbase'],
+    human_note: 'INC/Builderall ไม่เก็บ VAT → อาจต้อง ภ.พ.36'
+  },
+
+  // ════ Stream A Expense - Operations (4) ════
+  'A-EXP-RENT-OFFICE': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'เช่าออฟฟิศ (พ่อแม่)', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 5%, 40(5))', gen: true },
+      { id: 'contract', label: 'สัญญาเช่า' }
+    ],
+    optional: [
+      { id: 'photo', label: 'ภาพถ่ายพื้นที่' },
+      { id: 'receipt', label: 'ใบเสร็จจากพ่อแม่' }
+    ],
+    human_note: 'ไม่มีสัญญา → transfer pricing risk · WHT 5% หัก 40(5)',
+    requires_party: true, party_label: 'ผู้ให้เช่า', party_suggested_type: 'individual'
+  },
+  'A-EXP-RENT-WAREHOUSE': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'เช่าคลัง', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 5%)', gen: true },
+      { id: 'contract', label: 'สัญญาเช่า' }
+    ],
+    optional: [{ id: 'photo', label: 'ภาพถ่ายคลัง' }],
+    human_note: 'ถ้าที่เดียวกับ office ใช้สัญญาเดียวกันได้',
+    requires_party: true, party_label: 'ผู้ให้เช่า', party_suggested_type: 'individual'
+  },
+  'A-EXP-RENT-CAR-DAD': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'เช่ารถพ่อ (cap 36k/เดือน)', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 5%)', gen: true },
+      { id: 'contract', label: 'สัญญาเช่ารถ (≤ 36k)' }
+    ],
+    optional: [
+      { id: 'logbook', label: 'Logbook การใช้รถ' },
+      { id: 'registration', label: 'สำเนาเล่มทะเบียน' }
+    ],
+    human_note: '≤ 36,000/เดือน · เกิน → ส่วนเกินเป็นรายจ่ายต้องห้าม',
+    requires_party: true, party_label: 'เจ้าของรถ', party_suggested_type: 'individual'
+  },
+  'A-EXP-RENT-CAR-SELF': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'เช่ารถกระบะตัวเอง', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 5%)', gen: true },
+      { id: 'contract', label: 'สัญญาเช่า' }
+    ],
+    optional: [{ id: 'logbook', label: 'Logbook' }],
+    human_note: 'Related party · ต้อง benchmark ราคาตลาด · ต้องเป็นรถกระบะ',
+    requires_party: true, party_label: 'เจ้าของรถ', party_suggested_type: 'individual'
+  },
+  'A-EXP-SUPPLIES': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'วัสดุสิ้นเปลือง (< 5,000/ชิ้น)', vat: 0,
+    required: [
+      { id: 'receipt', label: 'ใบเสร็จ/Invoice (ชื่อบริษัท)' },
+      { id: 'slip', label: 'Slip โอน / Slip บัตรเครดิต' }
+    ],
+    optional: [],
+    sub_label_presets: ['กระดาษ A4', 'หมึกปริ้น', 'เครื่องเขียน', 'ของใช้สำนักงาน', 'อื่น ๆ'],
+    human_note: '< 5,000 บาท/ชิ้น = หัก 100% ปีเดียว · ถ้า ≥ 5,000 → ย้าย EQUIPMENT (ตัดค่าเสื่อม 5 ปี)'
+  },
+  'A-EXP-EQUIPMENT': {
+    stream: 'A', direction: 'OUT', group: 'Expense - Operations',
+    label_th: 'ครุภัณฑ์/อุปกรณ์ (≥ 5,000/ชิ้น)', vat: 0,
+    required: [
+      { id: 'invoice', label: 'Invoice/ใบเสร็จ (ชื่อบริษัท)' },
+      { id: 'slip', label: 'Slip โอน' }
+    ],
+    optional: [
+      { id: 'asset_photo', label: 'รูปถ่าย asset (ติด asset tag)' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (ถ้าจ้างติดตั้ง/ประกอบ WHT 3%)', gen: true }
+    ],
+    sub_label_presets: ['คอมพิวเตอร์', 'จอภาพ', 'โต๊ะทำงาน', 'เก้าอี้สำนักงาน', 'กล้อง', 'ไมค์/ออดิโอ', 'ขาตั้งกล้อง', 'ไฟสตูดิโอ', 'อื่น ๆ'],
+    human_note: '≥ 5,000 บาท/ชิ้น = ตัดค่าเสื่อม 5 ปี (อายุการใช้งาน) ไม่ใช่หักปีเดียว · ต้อง register เป็น fixed asset · ถ้า < 5,000 → ย้าย SUPPLIES'
+  },
+
+  // ════ Stream A Expense - คน (2) ════
+  'A-EXP-SALARY': {
+    stream: 'A', direction: 'OUT', group: 'Expense - คน',
+    label_th: 'เงินเดือนพนักงาน', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอนเงินเดือน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT ตามขั้นบันได)', gen: true },
+      { id: 'payslip', label: 'สลิปเงินเดือน (ส่งให้พนักงาน)', gen: true }
+    ],
+    optional: [
+      { id: 'contract', label: 'สัญญาจ้าง' },
+      { id: 'employee_list', label: 'ทะเบียนพนักงาน' }
+    ],
+    requires_party: true, party_label: 'พนักงาน', party_suggested_type: 'individual',
+    human_note: 'ไม่มีสัญญา → ตีเป็นรายจ่ายส่วนตัว · ประกันสังคม + สัญญาจ้างเฉพาะทาง (freelance 40(2)/40(8)) = ชลิตา manual แยก · ต้องออกสลิปเงินเดือน + 50 ทวิ ให้พนักงาน'
+  },
+  'A-EXP-DIRECTOR-FEE': {
+    stream: 'A', direction: 'OUT', group: 'Expense - คน',
+    label_th: 'ค่าตอบแทนกรรมการ', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ', gen: true }
+    ],
+    optional: [{ id: 'board_resolution', label: 'มติบอร์ด', gen: true }],
+    human_note: 'ไม่มีมติบอร์ด = governance อ่อน · Cap 50,000/ปี/คน',
+    requires_party: true, party_label: 'กรรมการ', party_suggested_type: 'individual'
+  },
+
+  // ════ Stream A Expense - ผลิต (4) ════
+  'A-EXP-PRINT': {
+    stream: 'A', direction: 'OUT', group: 'Expense - ผลิต',
+    label_th: 'ค่าพิมพ์ตำรา', vat: 0,
+    required: [
+      { id: 'invoice', label: 'Invoice/ใบเสร็จ (ชื่อบริษัท)' },
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (3% ถ้า ≥ 1,000)', gen: true }
+    ],
+    optional: [{ id: 'po', label: 'Purchase Order', gen: true }],
+    human_note: 'ไม่มี 50 ทวิ → ต้นทุน invalid',
+    requires_party: true, party_label: 'โรงพิมพ์', party_suggested_type: 'company'
+  },
+  'A-EXP-CONTENT-PROD': {
+    stream: 'A', direction: 'OUT', group: 'Expense - ผลิต',
+    label_th: 'ผลิตคอนเทนต์นอกสถานที่', vat: 0,
+    required: [
+      { id: 'expense_requisition', label: 'ใบเบิกค่าเดินทาง (ก่อนไป)', gen: true },
+      { id: 'receipts', label: 'ใบเสร็จทุกรายการ (ชื่อบริษัท)' },
+      { id: 'brief', label: 'Brief/Production plan', gen: true },
+      { id: 'output', label: 'ผลงาน output (หลังทำ)' }
+    ],
+    optional: [
+      { id: 'hr_policy', label: 'HR policy', gen: true },
+      { id: 'publishing_log', label: 'Publishing log', gen: true },
+      { id: 'trip_report', label: 'Trip report', gen: true }
+    ],
+    sub_label_presets: ['UGC video', 'Grandma Series', 'YouTube video', 'Carousel', 'LINE OA content'],
+    human_note: 'ไม่มี output → ตีเป็นท่องเที่ยว 80% · ห้ามมีครอบครัวร่วม',
+    requires_party: false, requires_party_for_gen: true, party_label: 'Freelance/ผู้รับจ้าง (ถ้ามี)', party_suggested_type: 'any'
+  },
+  'A-EXP-ROYALTY-B-ACCRUE': {
+    stream: 'A', direction: 'OUT', group: 'Expense - ผลิต',
+    label_th: 'ค่าสิทธิ์แป๋ง — Stage 1 (เกณฑ์สิทธิ)', vat: 0,
+    is_accrue: true, payable: true,
+    required: [
+      { id: 'contract', label: 'สัญญาซื้อ-ขายสิทธิ์ (ระบุ "ตำรา" + credit term)' },
+      { id: 'delivery_note', label: 'ใบส่งมอบงาน', gen: true },
+      { id: 'invoice', label: 'Invoice จากแป๋ง' }
+    ],
+    optional: [],
+    human_note: 'Stage 1 · วันส่งมอบ · บริษัทหัก expense 100% ทันที · WHT ยังไม่เกิด',
+    requires_party: true, party_label: 'ผู้รับค่าสิทธิ์ (แป๋ง)', party_suggested_type: 'individual'
+  },
+  'A-EXP-ROYALTY-B': {
+    stream: 'A', direction: 'OUT', group: 'Expense - ผลิต',
+    label_th: 'ค่าสิทธิ์แป๋ง — Stage 2 (PAY)', vat: 0, is_pay_stage: true,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 3%, 40(8))', gen: true },
+      { id: 'receipt_from_b', label: 'ใบเสร็จจากแป๋ง (มีเลข ปชช.)' }
+    ],
+    optional: [],
+    requires_ref_accrue_row_id: true,
+    wht_rate: 0.03,
+    human_note: 'Stage 2 · วันจ่าย · WHT 3% เกิด · ห้ามคำ "ลิขสิทธิ์" → 40(3) แพงขึ้น · สร้างจากปุ่ม Pay บนการ์ด Stage 1',
+    requires_party: true, party_label: 'ผู้รับค่าสิทธิ์ (แป๋ง)', party_suggested_type: 'individual',
+    hidden: true
+  },
+
+  // ════ Stream A Expense - อื่นๆ (5) ════
+  'A-EXP-TRAVEL': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: 'เดินทางประชุม/ติดต่องาน', vat: 0,
+    required: [
+      { id: 'expense_requisition', label: 'ใบเบิกค่าเดินทาง', gen: true },
+      { id: 'receipts', label: 'ใบเสร็จ (ชื่อบริษัท)' }
+    ],
+    optional: [{ id: 'memo', label: 'Memo วัตถุประสงค์', gen: true }],
+    human_note: 'ไม่มีวัตถุประสงค์ = ตัดทิ้ง'
+  },
+  'A-EXP-TRAINING': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: '⭐ อบรม (หัก 2 เท่า)', vat: 0,
+    required: [
+      { id: 'receipt', label: 'ใบเสร็จ (ชื่อบริษัท)' },
+      { id: 'certificate', label: 'Certificate' },
+      { id: 'accreditation', label: 'หลักสูตรรับรอง (กรมพัฒนาฝีมือแรงงาน)' },
+      { id: 'employee_list', label: 'ทะเบียนลูกจ้าง' }
+    ],
+    optional: [{ id: 'training_plan', label: 'มติบอร์ด/แผนอบรม', gen: true }],
+    human_note: 'หัก 2 เท่า · Udemy/Coursera = 1x · ผู้เข้า = ลูกจ้างเท่านั้น'
+  },
+  'A-EXP-DONATION-2X': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: '⭐ บริจาค 2 เท่า', vat: 0,
+    required: [
+      { id: 'e_donation', label: 'หลักฐาน e-Donation (My Tax Account)' },
+      { id: 'slip', label: 'Slip โอน' }
+    ],
+    optional: [],
+    sub_label_presets: ['รพ.รัฐ', 'สถานศึกษาของรัฐ', 'วัด/ศาสนสถาน', 'กสศ.', 'ด้านกีฬา'],
+    human_note: 'ใบกระดาษ 2569 ใช้ไม่ได้ · ≤ 10% กำไร'
+  },
+  'A-EXP-DONATION-1X': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: 'บริจาคทั่วไป', vat: 0,
+    required: [
+      { id: 'e_donation', label: 'e-Donation (บังคับ 2569)' },
+      { id: 'slip', label: 'Slip โอน' }
+    ],
+    optional: [],
+    human_note: 'หัก 1 เท่า ≤ 2% กำไร'
+  },
+  'A-EXP-MISC': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: 'catch-all (ใช้น้อยที่สุด)', vat: 0,
+    required: [
+      { id: 'invoice', label: 'Invoice/receipt (ชื่อบริษัท)' },
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'memo', label: 'Memo อธิบาย business purpose', gen: true }
+    ],
+    optional: [],
+    human_note: 'ใช้น้อยที่สุด · ไม่มี memo = ตัดเป็นไม่เกี่ยวกิจการ'
+  },
+  'A-EXP-DIVIDEND': {
+    stream: 'A', direction: 'OUT', group: 'Expense - อื่นๆ',
+    label_th: 'จ่ายเงินปันผลผู้ถือหุ้น', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 10% final, 40(4)(ข))', gen: true },
+      { id: 'minutes_shareholders', label: 'มติที่ประชุมผู้ถือหุ้นอนุมัติปันผล', gen: true }
+    ],
+    optional: [{ id: 'financial_statement', label: 'งบการเงินปีที่จ่าย' }],
+    human_note: '⚠ Dividend จ่ายจากกำไรหลังภาษี ไม่ใช่ tax-deductible expense · ลงเป็น OUT เพื่อ track cash flow ไม่ใช่ expense deduction · [pending ชลิตา: ยืนยัน accounting treatment + filing]',
+    requires_party: true, party_label: 'ผู้ถือหุ้น', party_suggested_type: 'individual'
+  },
+
+  // ════ Stream B Revenue (4) — แป๋งเป็นคนออก Invoice / รับจากบริษัท ════
+  'B-REV-LSS': {
+    stream: 'B', direction: 'IN', group: 'Revenue',
+    label_th: 'แป๋งรับค่าสิทธิ์ตำรา', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip รับเงินจากบริษัท' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 3%) — รับจากบริษัท' },
+      { id: 'invoice_issued', label: 'Invoice ที่แป๋งออกให้บริษัท', gen: true }
+    ],
+    optional: [{ id: 'contract', label: 'สัญญาซื้อ-ขายสิทธิ์' }],
+    human_note: 'ระบุ "ตำรา/วรรณกรรม" · [pending ชลิตา: sale vs service → WHT 0% or 3%]',
+    requires_party: true, party_label: 'ผู้จ่าย (บริษัท A)', party_suggested_type: 'company'
+  },
+  'B-REV-RENT-CAR': {
+    stream: 'B', direction: 'IN', group: 'Revenue',
+    label_th: 'แป๋งรับค่าเช่ารถ', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip รับเงิน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 5%) — รับจากบริษัท' },
+      { id: 'invoice_issued', label: 'Invoice/ใบเสร็จ', gen: true }
+    ],
+    optional: [{ id: 'contract', label: 'สัญญาเช่า' }],
+    human_note: 'ผู้จ่าย = THAI FOREX ELITE · WHT 5%',
+    requires_party: true, party_label: 'ผู้จ่าย (บริษัท A)', party_suggested_type: 'company'
+  },
+  'B-REV-DIRECTOR-FEE': {
+    stream: 'B', direction: 'IN', group: 'Revenue',
+    label_th: 'แป๋งรับค่าตอบแทนกรรมการ', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip รับเงินจากบริษัท' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT ขั้นบันได, 40(2))', gen: true },
+      { id: 'invoice_issued', label: 'ใบเสร็จ/Invoice ที่แป๋งออก', gen: true }
+    ],
+    optional: [{ id: 'board_resolution', label: 'มติบอร์ดแต่งตั้ง' }],
+    human_note: 'หัก 50% max 100k/ปี · รวมคำนวณภาษีปลายปีกับ 40(8) วรรณกรรม · [pending ชลิตา: ยืนยัน cap และ filing]',
+    requires_party: true, party_label: 'ผู้จ่าย (บริษัท A)', party_suggested_type: 'company'
+  },
+  'B-REV-DIVIDEND': {
+    stream: 'B', direction: 'IN', group: 'Revenue',
+    label_th: 'แป๋งรับเงินปันผล', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip รับเงิน' },
+      { id: 'wht_cert', label: 'ใบ 50 ทวิ (WHT 10% final, 40(4)(ข))' },
+      { id: 'minutes_shareholders', label: 'สำเนามติที่ประชุมผู้ถือหุ้น' }
+    ],
+    optional: [],
+    wht_rate: 0.10,
+    human_note: 'WHT 10% final → เลือกไม่รวมคำนวณภาษีปลายปีได้ (tax-efficient) · หรือเลือกรวมถ้า marginal rate ต่ำกว่า 10% · [pending ชลิตา: optimal election per year]',
+    requires_party: true, party_label: 'ผู้จ่าย (บริษัท A)', party_suggested_type: 'company'
+  },
+
+  // ════ Loan (6) ════
+  'A-LOAN-FROM-B': {
+    stream: 'A', direction: 'IN', group: 'Loan',
+    label_th: 'บริษัทยืมเงินจากแป๋ง', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'loan_contract', label: 'สัญญากู้ยืม (> 2,000 บาท)', gen: true }
+    ],
+    optional: [
+      { id: 'board_resolution', label: 'มติบอร์ด', gen: true },
+      { id: 'stamp_duty', label: 'อากรแสตมป์ (1 บ/2,000 บ)' }
+    ],
+    human_note: 'balance sheet · ไม่กระทบ P&L',
+    requires_party: true, party_label: 'แป๋ง (เจ้าหนี้)', party_suggested_type: 'individual',
+    repayable: true
+  },
+  'A-LOAN-REPAY-B': {
+    stream: 'A', direction: 'OUT', group: 'Loan',
+    label_th: 'บริษัทคืนเงินให้แป๋ง', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอนคืน' }
+    ],
+    optional: [],
+    human_note: 'balance sheet · ยอดไม่เกินที่กู้มา · สัญญากู้เดิมดูได้จาก parent card (ref_loan_row_id)',
+    requires_party: true, party_label: 'แป๋ง (เจ้าหนี้เดิม)', party_suggested_type: 'individual',
+    hidden: true
+  },
+  'B-LOAN-FROM-A': {
+    stream: 'B', direction: 'IN', group: 'Loan',
+    label_th: 'แป๋งยืมเงินจากบริษัท', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip โอน' },
+      { id: 'loan_contract', label: 'สัญญากู้ยืม (ต้องมีดอกเบี้ย)', gen: true }
+    ],
+    optional: [{ id: 'board_resolution', label: 'มติบอร์ด', gen: true }],
+    human_note: '0% ดอก = deemed interest + ตีเป็นเงินปันผล',
+    requires_party: true, party_label: 'บริษัท A (เจ้าหนี้)', party_suggested_type: 'company',
+    repayable: true
+  },
+  'B-LOAN-REPAY-A': {
+    stream: 'B', direction: 'OUT', group: 'Loan',
+    label_th: 'แป๋งคืนเงินให้บริษัท', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอนคืน' }
+    ],
+    optional: [{ id: 'wht_cert', label: 'WHT 15% ดอกเบี้ย (50 ทวิ)', gen: true }],
+    human_note: 'balance sheet · ถ้ามีดอกเบี้ย → WHT 15% · สัญญากู้เดิมดูได้จาก parent card (ref_loan_row_id)',
+    requires_party: true, party_label: 'บริษัท A (เจ้าหนี้เดิม)', party_suggested_type: 'company',
+    hidden: true
+  },
+  'A-LOAN-INTERCOMPANY-OUT': {
+    stream: 'A', direction: 'OUT', group: 'Loan',
+    label_th: 'จ่ายบริษัทอื่น (intercompany)', vat: 0,
+    required: [
+      { id: 'slip', label: 'Slip โอน' },
+      { id: 'loan_contract', label: 'สัญญากู้', gen: true }
+    ],
+    optional: [],
+    human_note: 'future use · ต้อง arm\'s length',
+    requires_party: true, party_label: 'บริษัทผู้รับเงิน', party_suggested_type: 'company',
+    repayable: true
+  },
+  'A-LOAN-INTERCOMPANY-IN': {
+    stream: 'A', direction: 'IN', group: 'Loan',
+    label_th: 'รับจากบริษัทอื่น (intercompany)', vat: 0,
+    required: [
+      { id: 'slip_received', label: 'Slip รับเงิน' },
+      { id: 'loan_contract', label: 'สัญญากู้' }
+    ],
+    optional: [],
+    human_note: 'future use',
+    requires_party: true, party_label: 'บริษัทผู้ให้กู้', party_suggested_type: 'company',
+    hidden: true
+  }
+};
+
+const REFUND_MAP = { 'A-REV-BOOK': 'A-REV-BOOK-REFUND', 'A-REV-COURSE': 'A-REV-COURSE-REFUND' };
+const PAY_MAP = { 'A-EXP-ROYALTY-B-ACCRUE': 'A-EXP-ROYALTY-B' };
+const LOAN_REPAY_MAP = {
+  'A-LOAN-FROM-B': 'A-LOAN-REPAY-B',
+  'B-LOAN-FROM-A': 'B-LOAN-REPAY-A',
+  'A-LOAN-INTERCOMPANY-OUT': 'A-LOAN-INTERCOMPANY-IN'
+};
+
+// ============================================================================
+// STATE
+// ============================================================================
+let parties = [];
+let partyIdCounter = 100;
+let amountPresets = []; // v8.2: { id, label, amount, created_at }
+let presetIdCounter = 500; // reserve 100-499 for parties
+let transactions = [];
+let rowIdCounter = 1000;
+let activeTimeFilter = 'all';
+let activeStreamFilter = 'all';  // v8.1: stream filter separated from status
+let activeStatusFilter = null;
+let formState = { stream: null, direction: null, slots: {}, partyId: null };
+let inlineFormState = { txnRowId: null, mode: null, slots: {} }; // mode: 'refund' | 'pay'
+let customDateRange = { start: null, end: null };
+let dirtyChanges = [];
+let isReadOnly = false;
+
+function markDirty(desc) {
+  if (isReadOnly) return;
+  dirtyChanges.push({ desc, at: Date.now() });
+  renderDirtyBanner();
+}
+function clearDirty() {
+  dirtyChanges = [];
+  renderDirtyBanner();
+}
+function renderDirtyBanner() {
+  const banner = document.getElementById('dirty-banner');
+  if (!banner) return;
+  if (dirtyChanges.length === 0) {
+    banner.classList.remove('show');
+    banner.style.display = 'none';
+  } else {
+    banner.classList.add('show');
+    banner.style.display = 'flex';
+    const countEl = banner.querySelector('.dirty-count');
+    if (countEl) countEl.textContent = dirtyChanges.length;
+  }
+}
+function simulateSave() {
+  try {
+    const payload = { transactions, parties, savedAt: new Date().toISOString() };
+    localStorage.setItem('5mt_ledger_data', JSON.stringify(payload));
+    clearDirty();
+    toast('✓ Save เสร็จ');
+    if (typeof broadcastSave === 'function') broadcastSave();
+  } catch (e) {
+    toast('⚠ Save ล้มเหลว: ' + e.message, 'error');
+  }
+}
+function guardMajorAction(desc, proceedFn) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  if (dirtyChanges.length > 0) {
+    if (!confirm(`⚠ คุณมี ${dirtyChanges.length} changes ที่ยังไม่ save\n\n${desc}\n\nต้องการทำต่อโดยไม่ save มั้ย? (Cancel = กลับไป save ก่อน)`)) return;
+  }
+  proceedFn();
+}
+
+// Multi-tab M1 — BroadcastChannel + writer lock
+const TAB_ID = `tab_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const WRITER_KEY = '5mt_writer_tab';
+const WRITER_HEARTBEAT_KEY = '5mt_writer_hb';
+const STALE_MS = 30000;
+let bc = null;
+let heartbeatTimer = null;
+
+function becomeWriter() {
+  localStorage.setItem(WRITER_KEY, TAB_ID);
+  localStorage.setItem(WRITER_HEARTBEAT_KEY, String(Date.now()));
+  setReadOnly(false);
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = setInterval(() => {
+    if (!isReadOnly) localStorage.setItem(WRITER_HEARTBEAT_KEY, String(Date.now()));
+  }, 10000);
+}
+
+function setReadOnly(flag) {
+  isReadOnly = flag;
+  const banner = document.getElementById('readonly-banner');
+  if (banner) {
+    if (flag) { banner.classList.add('show'); banner.style.display = 'flex'; }
+    else { banner.classList.remove('show'); banner.style.display = 'none'; }
+  }
+  // v7.1 P5 — Mode indicator in topbar + document.title
+  const mi = document.getElementById('mode-indicator');
+  if (mi) {
+    if (flag) { mi.textContent = '🔴 READ-ONLY'; mi.className = 'mode-indicator mode-ro'; }
+    else      { mi.textContent = '🟢 EDIT';      mi.className = 'mode-indicator mode-edit'; }
+  }
+  document.title = flag ? '🔴 [RO] 5MT Ledger' : '5MT Ledger';
+}
+
+function checkWriter() {
+  const currentWriter = localStorage.getItem(WRITER_KEY);
+  const hb = Number(localStorage.getItem(WRITER_HEARTBEAT_KEY) || 0);
+  const stale = (Date.now() - hb) > STALE_MS;
+  if (!currentWriter || stale) { becomeWriter(); return; }
+  if (currentWriter === TAB_ID) { setReadOnly(false); return; }
+  setReadOnly(true);
+}
+
+function takeOver() {
+  if (bc) bc.postMessage({ type: 'takeover', from: TAB_ID });
+  becomeWriter();
+  toast('✓ Tab นี้เป็น writer แล้ว');
+}
+
+function broadcastSave() {
+  if (bc) bc.postMessage({ type: 'saved', from: TAB_ID });
+}
+
+function initMultiTab() {
+  try {
+    bc = new BroadcastChannel('5mt_sync');
+    bc.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.from === TAB_ID) return;
+      if (msg.type === 'takeover') {
+        setReadOnly(true);
+        if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+        toast('🔒 Tab อื่น take over แล้ว');
+      } else if (msg.type === 'saved') {
+        toast('📡 ข้อมูลถูกอัพเดท');
+      }
+    };
+  } catch (e) {
+    console.warn('BroadcastChannel unavailable:', e);
+  }
+  // Storage event fallback
+  window.addEventListener('storage', (e) => {
+    if (e.key === WRITER_KEY && e.newValue && e.newValue !== TAB_ID) {
+      setReadOnly(true);
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+  });
+  checkWriter();
+}
+
+function ymd(d) { const y = d.getFullYear(); const m = String(d.getMonth()+1).padStart(2,'0'); const day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function todayStr() { return ymd(new Date()); }
+function yesterdayStr() { const d = new Date(); d.setDate(d.getDate() - 1); return ymd(d); }
+function nDaysAgoStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); }
+// v8.1: month/year boundary helpers
+function monthStartStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+function monthStartNMonthsAgoStr(n) { const d = new Date(); d.setMonth(d.getMonth() - n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; }
+function monthEndNMonthsAgoStr(n) { const d = new Date(); d.setMonth(d.getMonth() - n + 1, 0); return ymd(d); }
+function yearStartStr() { return `${new Date().getFullYear()}-01-01`; }
+function humanAge(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  const days = Math.floor((Date.now() - then) / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days/30)}mo ago`;
+  return `${Math.floor(days/365)}y ago`;
+}
+
+function seedParties() {
+  parties = [
+    { id: 'p-001', name: 'พิษณุคม ไชยเวช', nickname: 'ผมเอง', type: 'individual', tax_id: '', address: '', related_party: true },
+    { id: 'p-002', name: 'ชลิตา อาล่อง', nickname: 'บัญชี', type: 'individual', tax_id: '', address: '', related_party: false },
+    { id: 'p-003', name: 'สุระพงค์ ไชยเวช', nickname: 'พ่อ', type: 'individual', tax_id: '', address: '', related_party: true },
+    { id: 'p-004', name: 'ดวงตา ไชยเวช', nickname: 'แม่', type: 'individual', tax_id: '', address: '', related_party: true },
+    { id: 'p-005', name: 'ชลลดา ไชยเวช', nickname: '', type: 'individual', tax_id: '', address: '', related_party: true },
+    { id: 'p-006', name: 'บริษัท ไทย ฟอเร็กซ์ อีลีท จำกัด', nickname: 'บริษัท A', type: 'company', tax_id: '0-1055-60000-00-0', address: '', related_party: true }
+  ];
+  partyIdCounter = 6;
+}
+
+function seedTransactions() {
+  transactions = [
+    {
+      row_id: 1001, date: '2026-04-10', category: 'A-REV-BOOK',
+      sub_label: 'ชุดตำราระบบเทรด LSS', counterparty: 'คุณเอ (ลูกค้า)', amount: 9900,
+      slots: {
+        receipt_issued: 'receipt_cust_ae_20260410.pdf',
+        slip_received: 'slip_9900_cust_ae.png',
+        sales_page: 'lss-sales-page-apr10.png'
+      },
+      created_at: '2026-04-10T14:20:00.000Z',
+      sort_order: 1000
+    },
+    {
+      row_id: 1002, date: '2026-04-11', category: 'A-REV-BOOK',
+      sub_label: 'ชุดตำราระบบเทรด LSS', counterparty: 'คุณบี (ลูกค้า)', amount: 4950,
+      slots: { slip_received: 'slip_4950_cust_bee.png' },
+      created_at: '2026-04-11T09:15:00.000Z',
+      sort_order: 2000
+    },
+    {
+      row_id: 1003, date: '2026-04-12', category: 'A-EXP-ADS',
+      sub_label: 'Meta Ads', counterparty: 'Meta Platforms Inc.', amount: 5000,
+      slots: { statement: 'kbank_cc_apr12.pdf' },
+      created_at: '2026-04-18T11:00:00.000Z',
+      sort_order: 3000
+    },
+    {
+      row_id: 1004, date: '2026-04-13', category: 'A-REV-COURSE',
+      sub_label: '7ST', counterparty: 'คุณซี (ลูกค้า)', amount: 1790,
+      slots: { slip_received: 'slip_1790.png' },
+      created_at: '2026-04-13T16:45:00.000Z',
+      sort_order: 4000
+    },
+    {
+      row_id: 1005, date: '2026-04-15', category: 'A-EXP-ROYALTY-B-ACCRUE',
+      counterparty: 'แป๋ง', amount: 100000,
+      party_id: 'p-001',
+      slots: {
+        contract: 'royalty_contract_2026q2.pdf',
+        delivery_note: 'delivery_lss_vol1.pdf',
+        invoice: 'invoice_from_b_100k.pdf'
+      },
+      created_at: '2026-04-15T10:00:00.000Z',
+      sort_order: 5000
+    },
+    {
+      row_id: 1006, date: '2026-04-16', category: 'A-EXP-SUPPLIES',
+      sub_label: 'หมึกปริ้น', counterparty: 'ร้าน XYZ', amount: 1200,
+      slots: { receipt: 'receipt_ink_1200.pdf', slip: 'slip_1200.png' },
+      created_at: '2026-04-19T13:30:00.000Z',
+      sort_order: 6000
+    },
+    {
+      row_id: 1007, date: '2026-04-17', category: 'A-EXP-EQUIPMENT',
+      sub_label: 'จอ', counterparty: 'Power Buy', amount: 10000,
+      slots: { invoice: 'invoice_monitor_10k.pdf', slip: 'slip_10k.png' },
+      created_at: '2026-04-20T08:00:00.000Z',
+      sort_order: 7000
+    },
+    {
+      row_id: 1008, date: '2026-04-05', category: 'A-LOAN-FROM-B',
+      counterparty: 'แป๋ง', amount: 100000,
+      party_id: 'p-001',
+      slots: {
+        slip: 'slip_loan_from_b_100k.png',
+        loan_contract: 'contract_loan_from_b_100k.pdf'
+      },
+      created_at: '2026-04-05T09:00:00.000Z',
+      sort_order: 500
+    },
+    {
+      row_id: 1009, date: '2026-04-08', category: 'B-LOAN-FROM-A',
+      counterparty: 'บริษัท THAI FOREX ELITE', amount: 50000,
+      slots: {
+        slip_received: 'slip_loan_from_a_50k.png',
+        loan_contract: 'contract_loan_from_a_50k.pdf'
+      },
+      created_at: '2026-04-08T11:30:00.000Z',
+      sort_order: 800
+    },
+    {
+      row_id: 1010, date: '2026-04-15', category: 'B-LOAN-REPAY-A',
+      counterparty: 'บริษัท THAI FOREX ELITE', amount: 20000,
+      ref_loan_row_id: 1009,
+      slots: {
+        slip: 'slip_repay_to_a_20k.png',
+        original_contract: 'contract_loan_from_a_50k.pdf'
+      },
+      created_at: '2026-04-15T14:10:00.000Z',
+      sort_order: 1500
+    },
+    {
+      row_id: 1011, date: '2026-04-12', category: 'A-LOAN-INTERCOMPANY-OUT',
+      counterparty: 'บริษัทในเครือ XYZ', amount: 30000,
+      slots: {
+        slip: 'slip_intercompany_30k.png',
+        loan_contract: 'contract_intercompany_30k.pdf'
+      },
+      created_at: '2026-04-12T10:00:00.000Z',
+      sort_order: 1200
+    },
+    // v8.2 demo rows — Director fee + Dividend A→B pairs
+    {
+      row_id: 1012, date: '2026-04-01', category: 'B-REV-DIRECTOR-FEE',
+      sub_label: 'demo', amount: 30000,
+      party_id: 'p-006',
+      slots: {
+        slip_received: 'slip_director_fee_30k.png'
+      },
+      created_at: '2026-04-01T10:00:00.000Z',
+      sort_order: 9000
+    },
+    {
+      row_id: 1013, date: '2026-04-18', category: 'A-EXP-DIVIDEND',
+      sub_label: 'demo', amount: 200000,
+      party_id: 'p-001',
+      slots: {
+        slip: 'slip_dividend_out_200k.png'
+      },
+      created_at: '2026-04-18T16:00:00.000Z',
+      sort_order: 9500
+    },
+    {
+      row_id: 1014, date: '2026-04-18', category: 'B-REV-DIVIDEND',
+      sub_label: 'demo', amount: 180000,
+      party_id: 'p-006',
+      slots: {
+        slip_received: 'slip_dividend_in_180k.png'
+      },
+      created_at: '2026-04-18T16:05:00.000Z',
+      sort_order: 9600
+    }
+  ];
+  rowIdCounter = 1014;
+}
+
+// ============================================================================
+// UTILS
+// ============================================================================
+function fmtAmount(n) { return Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function toast(msg, type, durationMs) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  const dur = durationMs || 2400;
+  if (t._hideTimer) clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// v8.0 — Undo toast (separate element, 4s default, button action)
+let _undoToastTimer = null;
+let _undoToastCountdownTimer = null;
+function showUndoToast(message, fname, onUndo, durationMs) {
+  const existing = document.getElementById('undo-toast');
+  if (existing) existing.remove();
+  if (_undoToastTimer) clearTimeout(_undoToastTimer);
+  if (_undoToastCountdownTimer) clearInterval(_undoToastCountdownTimer);
+
+  const dur = durationMs || 4000;
+  const t = document.createElement('div');
+  t.id = 'undo-toast';
+  t.className = 'undo-toast';
+  t.innerHTML = `
+    <div class="ut-msg">${message} <span class="fname">${fname}</span></div>
+    <button type="button" class="ut-btn" id="undo-toast-btn">↶ ย้อนกลับ</button>
+    <span class="ut-countdown" id="undo-toast-countdown">${Math.ceil(dur/1000)}</span>
+  `;
+  document.body.appendChild(t);
+  // animate in
+  requestAnimationFrame(() => t.classList.add('show'));
+
+  const cleanup = () => {
+    if (_undoToastTimer) { clearTimeout(_undoToastTimer); _undoToastTimer = null; }
+    if (_undoToastCountdownTimer) { clearInterval(_undoToastCountdownTimer); _undoToastCountdownTimer = null; }
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  };
+
+  document.getElementById('undo-toast-btn').addEventListener('click', () => {
+    cleanup();
+    try { onUndo(); } catch (e) { console.error(e); }
+    toast('↶ ย้อนกลับสำเร็จ');
+  });
+
+  let remain = Math.ceil(dur/1000);
+  _undoToastCountdownTimer = setInterval(() => {
+    remain -= 1;
+    const cd = document.getElementById('undo-toast-countdown');
+    if (cd) cd.textContent = remain;
+    if (remain <= 0) {
+      clearInterval(_undoToastCountdownTimer);
+      _undoToastCountdownTimer = null;
+    }
+  }, 1000);
+
+  _undoToastTimer = setTimeout(cleanup, dur);
+}
+function getIncompleteSlots(t) {
+  const cfg = CAT[t.category]; if (!cfg) return [];
+  return cfg.required.filter(s => !t.slots[s.id]);
+}
+function isRefunded(txn) { return transactions.some(r => r.ref_row_id === txn.row_id); }
+function getRefundRow(txn) { return transactions.find(r => r.ref_row_id === txn.row_id); }
+function isPaidAccrue(accrueTxn) { return transactions.some(p => p.ref_accrue_row_id === accrueTxn.row_id); }
+function getPayRow(accrueTxn) { return transactions.find(p => p.ref_accrue_row_id === accrueTxn.row_id); }
+
+// Loan repay helpers (P2 partial support)
+function getLoanRepays(loanTxn) { return transactions.filter(r => r.ref_loan_row_id === loanTxn.row_id); }
+function getLoanRepaidTotal(loanTxn) { return getLoanRepays(loanTxn).reduce((s, r) => s + Number(r.amount || 0), 0); }
+function getLoanOutstanding(loanTxn) { return Number(loanTxn.amount || 0) - getLoanRepaidTotal(loanTxn); }
+function isLoanFullyRepaid(loanTxn) { return getLoanOutstanding(loanTxn) <= 0.01; }
+function getLoanRepaidPct(loanTxn) {
+  const total = Number(loanTxn.amount || 0); if (!total) return 0;
+  return Math.round((getLoanRepaidTotal(loanTxn) / total) * 100);
+}
+function getLoanStatus(loanTxn) {
+  const repaid = getLoanRepaidTotal(loanTxn);
+  if (repaid <= 0.01) return 'unrepaid';
+  if (isLoanFullyRepaid(loanTxn)) return 'repaid';
+  return 'partial';
+}
+
+// v8.0 — Parent/Child + CRUD helpers
+function isChildRow(t) {
+  return !!(t.ref_loan_row_id || t.ref_accrue_row_id || t.ref_row_id);
+}
+function getParentOf(t) {
+  if (t.ref_loan_row_id)   return transactions.find(x => x.row_id === t.ref_loan_row_id);
+  if (t.ref_accrue_row_id) return transactions.find(x => x.row_id === t.ref_accrue_row_id);
+  if (t.ref_row_id)        return transactions.find(x => x.row_id === t.ref_row_id);
+  return null;
+}
+function getChildrenOf(t) {
+  return transactions.filter(c =>
+    c.ref_loan_row_id === t.row_id ||
+    c.ref_accrue_row_id === t.row_id ||
+    c.ref_row_id === t.row_id
+  );
+}
+function hasAnyChildren(t) { return getChildrenOf(t).length > 0; }
+function getMissingRequiredCount(t) {
+  // v8.0 soft-required: count non-gen required slots that are empty
+  const cfg = CAT[t.category]; if (!cfg) return 0;
+  return cfg.required.filter(s => !s.gen && !t.slots[s.id]).length;
+}
+
+// ============================================================================
+// PARTY REGISTRY
+// ============================================================================
+function getPartyById(id) { return parties.find(p => p.id === id); }
+
+function formatPartyDisplay(party) {
+  if (!party) return '';
+  const nn = party.nickname ? ` · ${party.nickname}` : '';
+  const rel = party.related_party ? ' · RELATED' : '';
+  return `${party.name}${nn}${rel}`;
+}
+
+function updatePartyCount() {
+  const el = document.getElementById('party-count');
+  if (el) el.textContent = parties.length;
+}
+
+// ============================================================================
+// v8.2 — AMOUNT PRESET REGISTRY
+// ============================================================================
+function getPresetById(id) { return amountPresets.find(p => p.id === id); }
+
+function updatePresetCount() {
+  const el = document.getElementById('preset-count');
+  if (el) el.textContent = amountPresets.length;
+}
+
+function presetOptionsHTML(selectedId) {
+  let html = '<option value="">— เลือก Preset —</option>';
+  amountPresets.forEach(p => {
+    const sel = selectedId && selectedId === p.id ? ' selected' : '';
+    html += `<option value="${p.id}"${sel}>${p.label} · ${fmtAmount(p.amount)}</option>`;
+  });
+  return html;
+}
+
+function refreshAllPresetPickers() {
+  document.querySelectorAll('.preset-picker').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = presetOptionsHTML();
+    if (cur && amountPresets.some(p => p.id === cur)) sel.value = cur;
+  });
+}
+
+function openPresetRegistry() {
+  document.getElementById('preset-registry-modal').classList.add('show');
+  renderPresetList();
+  document.getElementById('preset-form-area').innerHTML = '';
+}
+
+function closePresetRegistry() {
+  document.getElementById('preset-registry-modal').classList.remove('show');
+  document.getElementById('preset-form-area').innerHTML = '';
+}
+
+function renderPresetList() {
+  const list = document.getElementById('preset-list');
+  if (!list) return;
+  if (!amountPresets.length) {
+    list.innerHTML = `<div class="no-category" style="margin-top:12px;">ยังไม่มี preset · กด "⊕ เพิ่ม Preset ใหม่" เพื่อเริ่ม</div>`;
+    return;
+  }
+  let html = '';
+  amountPresets.forEach(p => {
+    html += `
+      <div class="preset-row" data-id="${p.id}">
+        <div class="pr-icon">💰</div>
+        <div class="pr-body">
+          <div class="pr-name-row">${p.label}<span class="pr-amount">${fmtAmount(p.amount)}</span></div>
+          <div class="pr-meta-row">${p.id}</div>
+        </div>
+        <div class="pr-actions">
+          <button class="ds-file-btn" data-action="preset-edit" data-id="${p.id}">✎ Edit</button>
+          <button class="ds-file-btn" data-action="preset-delete" data-id="${p.id}">🗑 Delete</button>
+        </div>
+      </div>`;
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('[data-action="preset-edit"]').forEach(b => {
+    const handler = (e) => { e.stopPropagation(); openPresetForm(b.dataset.id); };
+    b.addEventListener('click', handler);
+    b.addEventListener('touchend', (e) => { e.preventDefault(); handler(e); });
+  });
+  list.querySelectorAll('[data-action="preset-delete"]').forEach(b => {
+    const handler = (e) => { e.stopPropagation(); deletePreset(b.dataset.id); };
+    b.addEventListener('click', handler);
+    b.addEventListener('touchend', (e) => { e.preventDefault(); handler(e); });
+  });
+}
+
+let presetPickerPendingSelect = null; // target element id to autofill after create
+let presetPickerPendingTarget = null; // actual target element reference (for dynamic pickers)
+
+function openPresetForm(presetId) {
+  const isEdit = !!presetId;
+  const p = isEdit ? getPresetById(presetId) : { id: '', label: '', amount: '' };
+  if (isEdit && !p) return;
+  const area = document.getElementById('preset-form-area');
+  area.innerHTML = `
+    <div class="preset-form">
+      <div class="preset-form-title">${isEdit ? '✎ Edit Preset' : '⊕ New Preset'}</div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label"><span>Label <span class="required">*</span></span></label>
+          <input type="text" id="prf-label" value="${(p.label || '').replace(/"/g, '&quot;')}" placeholder="INC Funnels / Google AI Pro">
+        </div>
+        <div class="field">
+          <label class="field-label"><span>Amount <span class="required">*</span></span></label>
+          <input type="number" id="prf-amount" value="${p.amount}" step="0.01" placeholder="2990.00">
+        </div>
+      </div>
+      <div class="inline-submit-bar" style="margin-top:12px;">
+        <button type="button" class="action-btn" id="prf-cancel" style="background:transparent;">✕ Cancel</button>
+        <button type="button" class="inline-submit-btn" id="prf-save">${isEdit ? 'บันทึกการแก้ไข' : 'เพิ่ม Preset'}</button>
+      </div>
+    </div>`;
+  const cancelHandler = () => { area.innerHTML = ''; };
+  const saveHandler = () => submitPresetForm(presetId);
+  const cancelBtn = document.getElementById('prf-cancel');
+  const saveBtn = document.getElementById('prf-save');
+  cancelBtn.addEventListener('click', cancelHandler);
+  cancelBtn.addEventListener('touchend', (e) => { e.preventDefault(); cancelHandler(); });
+  saveBtn.addEventListener('click', saveHandler);
+  saveBtn.addEventListener('touchend', (e) => { e.preventDefault(); saveHandler(); });
+}
+
+function submitPresetForm(existingId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const label = document.getElementById('prf-label').value.trim();
+  const amount = Number(document.getElementById('prf-amount').value);
+  if (!label) { toast('ต้องใส่ Label', 'error'); return; }
+  if (!amount || amount <= 0) { toast('ต้องใส่ Amount > 0', 'error'); return; }
+  let newP = null;
+  if (existingId) {
+    const p = getPresetById(existingId);
+    if (!p) return;
+    Object.assign(p, { label, amount });
+    markDirty(`preset edit: ${label}`);
+    toast(`✎ แก้ไข ${label} แล้ว`);
+  } else {
+    presetIdCounter++;
+    newP = {
+      id: `pr-${String(presetIdCounter).padStart(3, '0')}`,
+      label, amount,
+      created_at: new Date().toISOString()
+    };
+    amountPresets.push(newP);
+    markDirty(`preset add: ${label}`);
+    toast(`⊕ เพิ่ม ${label} แล้ว`);
+  }
+  document.getElementById('preset-form-area').innerHTML = '';
+  renderPresetList();
+  updatePresetCount();
+  refreshAllPresetPickers();
+  // auto-apply to pending target (picker + input)
+  if (newP && presetPickerPendingTarget) {
+    const targetInput = presetPickerPendingTarget;
+    targetInput.value = newP.amount;
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // also select the picker that's adjacent
+    const wrap = targetInput.closest('.amount-with-preset');
+    if (wrap) {
+      const picker = wrap.querySelector('.preset-picker');
+      if (picker) picker.value = newP.id;
+    }
+    presetPickerPendingTarget = null;
+    presetPickerPendingSelect = null;
+    closePresetRegistry();
+    if (typeof updateSubmitState === 'function') updateSubmitState();
+  }
+}
+
+function deletePreset(id) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const p = getPresetById(id);
+  if (!p) return;
+  if (!confirm(`ลบ preset "${p.label}" (${fmtAmount(p.amount)})?`)) return;
+  amountPresets = amountPresets.filter(x => x.id !== id);
+  markDirty(`preset delete: ${p.label}`);
+  toast(`🗑 ลบ ${p.label} แล้ว`);
+  renderPresetList();
+  updatePresetCount();
+  refreshAllPresetPickers();
+}
+
+function seedPresets() {
+  amountPresets = [
+    { id: 'pr-501', label: 'INC Funnels', amount: 2990, created_at: '2026-04-01T00:00:00.000Z' },
+    { id: 'pr-502', label: 'Google AI Pro', amount: 750, created_at: '2026-04-01T00:00:00.000Z' },
+    { id: 'pr-503', label: 'Meta Verified', amount: 520, created_at: '2026-04-01T00:00:00.000Z' },
+    { id: 'pr-504', label: 'YouTube Premium', amount: 179, created_at: '2026-04-01T00:00:00.000Z' },
+    { id: 'pr-505', label: 'OneDrive', amount: 40, created_at: '2026-04-01T00:00:00.000Z' }
+  ];
+  presetIdCounter = 505;
+}
+
+function openPartyRegistry() {
+  document.getElementById('party-registry-modal').classList.add('show');
+  renderPartyList();
+  document.getElementById('party-form-area').innerHTML = '';
+}
+
+function closePartyRegistry() {
+  document.getElementById('party-registry-modal').classList.remove('show');
+  document.getElementById('party-form-area').innerHTML = '';
+}
+
+function renderPartyList() {
+  const list = document.getElementById('party-list');
+  if (!parties.length) {
+    list.innerHTML = `<div class="no-category" style="margin-top:12px;">ยังไม่มี party · กด "⊕ เพิ่ม Party ใหม่" เพื่อเริ่ม</div>`;
+    return;
+  }
+  let html = '';
+  parties.forEach(p => {
+    const icon = p.type === 'company' ? '🏢' : '👤';
+    const relBadge = p.related_party ? '<span class="p-related-badge">related</span>' : '';
+    const nn = p.nickname ? `<span class="p-nickname">· ${p.nickname}</span>` : '';
+    const meta = [p.tax_id || '—', p.type.toUpperCase()].join(' · ');
+    html += `
+      <div class="party-row" data-id="${p.id}">
+        <div class="p-icon">${icon}</div>
+        <div class="p-body">
+          <div class="p-name-row">${p.name}${nn}${relBadge}</div>
+          <div class="p-meta-row">${meta}</div>
+        </div>
+        <div class="p-actions">
+          <button class="ds-file-btn" data-action="party-edit" data-id="${p.id}">✎ Edit</button>
+          <button class="ds-file-btn" data-action="party-delete" data-id="${p.id}">🗑 Delete</button>
+        </div>
+      </div>`;
+  });
+  list.innerHTML = html;
+  // wire actions (click + touch)
+  list.querySelectorAll('[data-action="party-edit"]').forEach(b => {
+    const handler = (e) => { e.stopPropagation(); openPartyForm(b.dataset.id); };
+    b.addEventListener('click', handler);
+    b.addEventListener('touchend', (e) => { e.preventDefault(); handler(e); });
+  });
+  list.querySelectorAll('[data-action="party-delete"]').forEach(b => {
+    const handler = (e) => { e.stopPropagation(); deleteParty(b.dataset.id); };
+    b.addEventListener('click', handler);
+    b.addEventListener('touchend', (e) => { e.preventDefault(); handler(e); });
+  });
+}
+
+function openPartyForm(partyId) {
+  const isEdit = !!partyId;
+  const p = isEdit ? getPartyById(partyId) : { id: '', name: '', nickname: '', type: 'individual', tax_id: '', address: '', related_party: false };
+  if (isEdit && !p) return;
+  const area = document.getElementById('party-form-area');
+  area.innerHTML = `
+    <div class="party-form">
+      <div class="party-form-title">${isEdit ? '✎ Edit Party' : '⊕ New Party'}</div>
+      <div class="field">
+        <label class="field-label"><span>Type</span></label>
+        <div class="party-type-toggle" id="pf-type-toggle">
+          <button type="button" class="t-btn ${p.type === 'individual' ? 'active' : ''}" data-type="individual">👤 Individual</button>
+          <button type="button" class="t-btn ${p.type === 'company' ? 'active' : ''}" data-type="company">🏢 Company</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label"><span>ชื่อเต็ม / Legal Name <span class="required">*</span></span></label>
+        <input type="text" id="pf-name" value="${p.name.replace(/"/g, '&quot;')}" placeholder="นาย/นาง/บริษัท...">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label"><span>Nickname</span></label>
+          <input type="text" id="pf-nickname" value="${(p.nickname || '').replace(/"/g, '&quot;')}" placeholder="พ่อ / บริษัท A">
+        </div>
+        <div class="field">
+          <label class="field-label"><span>Tax ID / เลขผู้เสียภาษี</span></label>
+          <input type="text" id="pf-tax-id" value="${(p.tax_id || '').replace(/"/g, '&quot;')}" placeholder="1-2345-67890-12-3">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label"><span>ที่อยู่</span></label>
+        <input type="text" id="pf-address" value="${(p.address || '').replace(/"/g, '&quot;')}" placeholder="(optional)">
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="pf-related" ${p.related_party ? 'checked' : ''}>
+        <label for="pf-related">Related party (พ่อ/แม่/ตัวเอง/บริษัทในเครือ)</label>
+      </div>
+      <div class="inline-submit-bar" style="margin-top:12px;">
+        <button type="button" class="action-btn" id="pf-cancel" style="background:transparent;">✕ Cancel</button>
+        <button type="button" class="inline-submit-btn" id="pf-save">${isEdit ? 'บันทึกการแก้ไข' : 'เพิ่ม Party'}</button>
+      </div>
+    </div>`;
+  // toggle type
+  area.querySelectorAll('#pf-type-toggle .t-btn').forEach(b => {
+    const handler = () => {
+      area.querySelectorAll('#pf-type-toggle .t-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    };
+    b.addEventListener('click', handler);
+    b.addEventListener('touchend', (e) => { e.preventDefault(); handler(); });
+  });
+  const cancelHandler = () => { area.innerHTML = ''; };
+  const saveHandler = () => submitPartyForm(partyId);
+  const cancelBtn = document.getElementById('pf-cancel');
+  const saveBtn = document.getElementById('pf-save');
+  cancelBtn.addEventListener('click', cancelHandler);
+  cancelBtn.addEventListener('touchend', (e) => { e.preventDefault(); cancelHandler(); });
+  saveBtn.addEventListener('click', saveHandler);
+  saveBtn.addEventListener('touchend', (e) => { e.preventDefault(); saveHandler(); });
+}
+
+function submitPartyForm(existingId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const name = document.getElementById('pf-name').value.trim();
+  if (!name) { toast('ต้องใส่ชื่อ Party', 'error'); return; }
+  const type = document.querySelector('#pf-type-toggle .t-btn.active')?.dataset.type || 'individual';
+  const nickname = document.getElementById('pf-nickname').value.trim();
+  const tax_id = document.getElementById('pf-tax-id').value.trim();
+  const address = document.getElementById('pf-address').value.trim();
+  const related_party = document.getElementById('pf-related').checked;
+  if (existingId) {
+    const p = getPartyById(existingId);
+    if (!p) return;
+    Object.assign(p, { name, nickname, type, tax_id, address, related_party });
+    markDirty(`party edit: ${name}`);
+    toast(`✎ แก้ไข ${name} แล้ว`);
+  } else {
+    partyIdCounter++;
+    const newP = {
+      id: `p-${String(partyIdCounter).padStart(3, '0')}`,
+      name, nickname, type, tax_id, address, related_party
+    };
+    parties.push(newP);
+    markDirty(`party add: ${name}`);
+    toast(`⊕ เพิ่ม ${name} แล้ว`);
+    // if came from form picker → auto-select new party
+    if (partyPickerPendingSelect) {
+      formState.partyId = newP.id;
+      partyPickerPendingSelect = false;
+      closePartyRegistry();
+      refreshPartyPicker();
+      return;
+    }
+  }
+  document.getElementById('party-form-area').innerHTML = '';
+  renderPartyList();
+  updatePartyCount();
+  refreshPartyPicker();
+}
+
+function deleteParty(id) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const p = getPartyById(id);
+  if (!p) return;
+  // check usage
+  const used = transactions.some(t => t.party_id === id);
+  const msg = used
+    ? `"${p.name}" ถูกใช้ใน transaction อยู่ · ลบแล้ว party_id จะเป็น null ในธุรกรรมเหล่านั้น\n\nยืนยันลบ?`
+    : `ลบ "${p.name}"?`;
+  if (!confirm(msg)) return;
+  if (used) transactions.forEach(t => { if (t.party_id === id) t.party_id = null; });
+  parties = parties.filter(x => x.id !== id);
+  markDirty(`party delete: ${p.name}`);
+  toast(`🗑 ลบ ${p.name} แล้ว`);
+  renderPartyList();
+  updatePartyCount();
+  refreshPartyPicker();
+  renderTxnList();
+}
+
+// ============================================================================
+// PARTY PICKER (in form)
+// ============================================================================
+let partyPickerPendingSelect = false; // true when "+ เพิ่ม Party ใหม่" triggered registry open
+
+function refreshPartyPicker() {
+  const code = document.getElementById('f-category').value;
+  const wrap = document.getElementById('f-party-wrap');
+  if (!code || !CAT[code] || !CAT[code].requires_party) {
+    wrap.style.display = 'none';
+    formState.partyId = null;
+    document.getElementById('f-party-selected-info').style.display = 'none';
+    updateSubmitState();
+    return;
+  }
+  const cfg = CAT[code];
+  wrap.style.display = 'block';
+  document.getElementById('f-party-label').textContent = `👥 ${cfg.party_label || 'Party'} *`;
+  const sel = document.getElementById('f-party-select');
+  sel.innerHTML = '<option value="">— เลือก Party —</option>';
+  const suggestedType = cfg.party_suggested_type || 'any';
+  const filtered = suggestedType === 'any' ? parties : parties.filter(p => p.type === suggestedType);
+  filtered.forEach(p => {
+    const opt = new Option(formatPartyDisplay(p), p.id);
+    sel.appendChild(opt);
+  });
+  if (suggestedType !== 'any' && parties.some(p => p.type !== suggestedType)) {
+    const other = parties.filter(p => p.type !== suggestedType);
+    const og = document.createElement('optgroup');
+    og.label = `— อื่นๆ (${suggestedType === 'individual' ? 'ไม่ใช่บุคคล' : 'ไม่ใช่บริษัท'}) —`;
+    other.forEach(p => og.appendChild(new Option(formatPartyDisplay(p), p.id)));
+    sel.appendChild(og);
+  }
+  // keep selection if still valid
+  if (formState.partyId && parties.some(p => p.id === formState.partyId)) {
+    sel.value = formState.partyId;
+    renderPartySelectedInfo();
+  } else {
+    formState.partyId = null;
+    document.getElementById('f-party-selected-info').style.display = 'none';
+  }
+  updateSubmitState();
+}
+
+function renderPartySelectedInfo() {
+  const info = document.getElementById('f-party-selected-info');
+  const p = getPartyById(formState.partyId);
+  if (!p) { info.style.display = 'none'; return; }
+  const icon = p.type === 'company' ? '🏢' : '👤';
+  const rel = p.related_party ? '<span class="p-related">· RELATED</span>' : '';
+  info.style.display = 'block';
+  info.innerHTML = `
+    <div class="party-selected">
+      <div class="p-name">${icon} ${p.name}${p.nickname ? ` · ${p.nickname}` : ''}${rel}</div>
+      <div class="p-meta">${p.tax_id || 'ไม่มี Tax ID'} · ${p.type.toUpperCase()}</div>
+    </div>`;
+}
+
+// ============================================================================
+// FILE VIEWER
+// ============================================================================
+function getFileType(filename) {
+  if (!filename) return 'other';
+  const ext = filename.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'image';
+  if (ext === 'pdf') return 'pdf';
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) return 'office';
+  return 'other';
+}
+
+function openFileViewer(txnRowId, slotId) {
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category];
+  const slot = [...(cfg.required || []), ...(cfg.optional || [])].find(s => s.id === slotId);
+  const filename = txn.slots[slotId]; if (!filename) return;
+  const type = getFileType(filename);
+  document.getElementById('viewer-slot-label').textContent = `📄 ${slot.label}`;
+  document.getElementById('viewer-filename').textContent = `#${txnRowId} · ${filename}`;
+  const body = document.getElementById('viewer-body');
+  if (type === 'image') {
+    body.innerHTML = `<div class="no-preview"><div class="big">🖼 IMAGE PREVIEW</div><div class="small">${filename}</div><div class="small" style="margin-top:8px;">(MVP · in production → load from Drive)</div></div>`;
+  } else if (type === 'pdf') {
+    body.innerHTML = `<div class="no-preview"><div class="big">📄 PDF PREVIEW</div><div class="small">${filename}</div><div class="small" style="margin-top:8px;">(MVP · in production → iframe from Drive)</div></div>`;
+  } else if (type === 'office') {
+    body.innerHTML = `<div class="no-preview"><div class="big">📎 OFFICE FILE</div><div class="small">${filename}</div><div class="small" style="margin-top:8px;">No inline preview · open in Drive</div></div>`;
+  } else {
+    body.innerHTML = `<div class="no-preview"><div class="big">📎 FILE</div><div class="small">${filename}</div></div>`;
+  }
+  document.getElementById('file-viewer-modal').classList.add('show');
+  // wire footer buttons fresh each open
+  const dl = document.getElementById('viewer-download-btn');
+  const drv = document.getElementById('viewer-drive-btn');
+  dl.onclick = () => toast(`⬇ Download ${filename} (simulate)`);
+  drv.onclick = () => toast(`🔗 Open in Drive (simulate)`);
+}
+
+function closeFileViewer() {
+  document.getElementById('file-viewer-modal').classList.remove('show');
+}
+
+// ============================================================================
+// CASCADE FORM
+// ============================================================================
+function setStream(stream) {
+  formState.stream = stream;
+  formState.direction = null;
+  formState.slots = {};
+  formState.partyId = null;
+  document.querySelectorAll('#f-stream .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.val === stream));
+  // v7.2 — Stream B (40(8) วรรณกรรม หักเหมา 50% ≤100k) → ไม่มี OUT category · disable ปุ่ม
+  document.querySelectorAll('#f-direction .seg-btn').forEach(b => {
+    const isBlockedB = (stream === 'B' && b.dataset.val === 'OUT');
+    b.disabled = isBlockedB;
+    b.classList.remove('active');
+    b.title = isBlockedB ? 'Stream B (40(8) วรรณกรรม) ใช้หักเหมา 50% · ไม่ต้องบันทึก OUT' : '';
+  });
+  const catSel = document.getElementById('f-category');
+  catSel.innerHTML = '<option value="">— รอเลือก Direction —</option>';
+  catSel.disabled = true; catSel.value = '';
+  hideSubLabel(); hideAccrueRef(); renderSlots(); renderHumanNote(); refreshPartyPicker(); updateSubmitState();
+}
+
+function setDirection(direction) {
+  if (!formState.stream) return;
+  formState.direction = direction; formState.slots = {}; formState.partyId = null;
+  document.querySelectorAll('#f-direction .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.val === direction));
+  const catSel = document.getElementById('f-category');
+  const matches = Object.keys(CAT).filter(code => {
+    const c = CAT[code]; return c.stream === formState.stream && c.direction === direction && !c.hidden;
+  });
+  catSel.innerHTML = '';
+  if (!matches.length) {
+    catSel.innerHTML = '<option value="">— ไม่มี category สำหรับ combo นี้ —</option>'; catSel.disabled = true;
+  } else {
+    catSel.disabled = false;
+    catSel.appendChild(new Option('— เลือก category —', ''));
+    const grouped = {};
+    matches.forEach(code => { const g = CAT[code].group; if (!grouped[g]) grouped[g] = []; grouped[g].push(code); });
+    const groupOrder = ['Revenue', 'Expense - Marketing', 'Expense - Operations', 'Expense - คน', 'Expense - ผลิต', 'Expense - อื่นๆ', 'Loan'];
+    groupOrder.forEach(g => {
+      if (!grouped[g]) return;
+      const og = document.createElement('optgroup'); og.label = g;
+      grouped[g].forEach(code => og.appendChild(new Option(CAT[code].label_th, code)));
+      catSel.appendChild(og);
+    });
+  }
+  hideSubLabel(); hideAccrueRef(); renderSlots(); renderHumanNote(); refreshPartyPicker(); updateSubmitState();
+}
+
+function hideSubLabel() {
+  document.getElementById('f-sublabel-wrap').style.display = 'none';
+  document.getElementById('f-sublabel').innerHTML = '';
+  document.getElementById('f-sublabel-custom').value = '';
+  document.getElementById('f-sublabel-custom').style.display = 'none';
+}
+function hideAccrueRef() {
+  document.getElementById('f-ref-accrue-wrap').style.display = 'none';
+  document.getElementById('f-ref-accrue-row-id').innerHTML = '<option value="">— เลือก ACCRUE ที่ยังไม่จ่าย —</option>';
+}
+
+function onCategoryChange() {
+  const code = document.getElementById('f-category').value;
+  formState.slots = {};
+  formState.partyId = null;
+  if (code && CAT[code].sub_label_presets) {
+    document.getElementById('f-sublabel-wrap').style.display = 'block';
+    const slSel = document.getElementById('f-sublabel');
+    slSel.innerHTML = '<option value="">— เลือก —</option>';
+    CAT[code].sub_label_presets.forEach(p => slSel.appendChild(new Option(p, p)));
+    slSel.appendChild(new Option('อื่น ๆ (พิมพ์เอง)', '__other__'));
+  } else { hideSubLabel(); }
+  if (code && CAT[code].requires_ref_accrue_row_id) {
+    document.getElementById('f-ref-accrue-wrap').style.display = 'block';
+    const accSel = document.getElementById('f-ref-accrue-row-id');
+    accSel.innerHTML = '<option value="">— เลือก ACCRUE ที่ยังไม่จ่าย —</option>';
+    transactions.filter(t => CAT[t.category] && CAT[t.category].is_accrue && !isPaidAccrue(t)).forEach(t => {
+      const displayName = t.counterparty || (t.party_id && getPartyById(t.party_id)?.name) || '(ไม่ระบุ)';
+      accSel.appendChild(new Option(`#${t.row_id} · ${t.date} · ${displayName} · ${fmtAmount(t.amount)}`, t.row_id));
+    });
+  } else { hideAccrueRef(); }
+  // v8.2 — counterparty field removed · label/input update no longer needed
+  renderSlots(); renderHumanNote(); refreshPartyPicker(); updateSubmitState();
+}
+
+function renderSlots() {
+  const area = document.getElementById('slots-area');
+  const code = document.getElementById('f-category').value;
+  if (!code) {
+    let msg = 'รอเลือก category เพื่อดู file slots';
+    if (!formState.stream) msg = 'เริ่มจาก: เลือก Stream (A หรือ B)';
+    else if (!formState.direction) msg = 'ต่อไป: เลือก Direction (IN หรือ OUT)';
+    area.innerHTML = `<div class="no-category">${msg}</div>`; return;
+  }
+  const cfg = CAT[code];
+  const visibleRequired = cfg.required.filter(s => !s.gen);
+  const visibleOptional = (cfg.optional || []).filter(s => !s.gen);
+  let html = '';
+  html += '<div class="slots-section">';
+  html += `<div class="slots-section-title"><span>⭐ Required (upload)</span><span class="count">${visibleRequired.length} slots</span></div>`;
+  if (!visibleRequired.length) html += `<div class="no-category" style="padding:12px;">ไม่มี slot required ต้อง upload (gen-only cat)</div>`;
+  visibleRequired.forEach(slot => html += renderFormSlotHTML(slot, 'required', !!formState.slots[slot.id], formState.slots[slot.id]));
+  html += '</div>';
+  if (visibleOptional.length) {
+    html += '<div class="slots-section">';
+    html += `<div class="slots-section-title"><span>○ Optional (upload)</span><span class="count">${visibleOptional.length} slots</span></div>`;
+    visibleOptional.forEach(slot => html += renderFormSlotHTML(slot, 'optional', !!formState.slots[slot.id], formState.slots[slot.id]));
+    html += '</div>';
+  }
+  // note about gen slots (hidden from form)
+  const genCount = cfg.required.filter(s => s.gen).length + (cfg.optional || []).filter(s => s.gen).length;
+  if (genCount > 0) {
+    html += `<div class="no-category" style="padding:10px 14px; text-align:left; font-size:11px;">💡 อีก ${genCount} ไฟล์ที่ gen ได้ → บันทึกก่อน แล้วกด Gen ในการ์ด</div>`;
+  }
+  area.innerHTML = html;
+  area.querySelectorAll('.slot').forEach(el => {
+    const handler = () => formSlotUpload(el.dataset.slot);
+    el.addEventListener('click', handler);
+    el.addEventListener('touchstart', () => el.classList.add('touched'));
+    el.addEventListener('touchend', (e) => { e.preventDefault(); el.classList.remove('touched'); handler(); });
+  });
+}
+
+function renderFormSlotHTML(slot, kind, filled, filename) {
+  const icon = kind === 'required' ? '⭐' : '○';
+  const genTag = slot.gen ? '<span class="gen-pill">gen</span>' : '';
+  return `
+    <div class="slot ${kind} ${filled ? 'filled' : ''}" data-slot="${slot.id}">
+      <div class="slot-icon">${icon}</div>
+      <div class="slot-body">
+        <div class="slot-label">${genTag}${slot.label}</div>
+        ${filled ? `<div class="slot-filename">${filename}</div>` : `<div class="slot-hint">click เพื่อ upload${slot.gen ? ' · หรือ gen ใน card' : ''}</div>`}
+      </div>
+      <div class="slot-action">${filled ? '✓ filled' : 'upload'}</div>
+    </div>`;
+}
+
+function renderHumanNote() {
+  const area = document.getElementById('human-note-area');
+  const code = document.getElementById('f-category').value;
+  if (!code) { area.innerHTML = ''; return; }
+  area.innerHTML = `<div class="human-note"><span class="hn-label">⚠ ข้อควรระวัง (สำหรับคน ไม่ใช่ AI)</span>${CAT[code].human_note}</div>`;
+}
+
+function formSlotUpload(slotId) {
+  const name = prompt('(MVP simulate upload)\nพิมพ์ชื่อไฟล์:', `${slotId}_${Date.now()}.pdf`);
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  // Dedup B: filename reuse check
+  const used = transactions.find(t => Object.values(t.slots).includes(trimmed));
+  if (used) {
+    if (!confirm(`⚠ ชื่อไฟล์นี้เคยใช้แล้ว:\n"${trimmed}" อยู่ใน #${used.row_id}\n\nใช้ชื่อนี้ต่อ?`)) return;
+  }
+  formState.slots[slotId] = trimmed;
+  renderSlots(); updateSubmitState();
+}
+
+function updateSubmitState() {
+  // v8.0 SOFT-REQUIRED: block only on CORE fields (stream/dir/cat/date/amount/party/ref_accrue)
+  // v8.2 — counterparty removed (Party Registry covers this)
+  // Document slots are now "recommended" — submit passes, warning shown after
+  const btn = document.getElementById('submit-btn');
+  const status = document.getElementById('submit-status');
+  const code = document.getElementById('f-category').value;
+  if (!formState.stream) { btn.disabled = true; status.textContent = 'เริ่มจาก\nเลือก Stream'; status.className = 'submit-status'; return; }
+  if (!formState.direction) { btn.disabled = true; status.textContent = 'ต่อไป\nเลือก Direction'; status.className = 'submit-status'; return; }
+  if (!code) { btn.disabled = true; status.textContent = 'ต่อไป\nเลือก Category'; status.className = 'submit-status'; return; }
+  const cfg = CAT[code];
+  const date = document.getElementById('f-date').value;
+  const amount = document.getElementById('f-amount').value;
+  const needsAccrueRef = cfg.requires_ref_accrue_row_id && !document.getElementById('f-ref-accrue-row-id').value;
+  const needsParty = cfg.requires_party && !formState.partyId;
+  // CORE-FIELD blockers
+  const coreMissing = [];
+  if (!date) coreMissing.push('date');
+  if (!amount) coreMissing.push('amount');
+  if (needsAccrueRef) coreMissing.push('ref_accrue');
+  if (needsParty) coreMissing.push('party');
+  if (coreMissing.length) {
+    btn.disabled = true;
+    status.textContent = `ขาด: ${coreMissing.slice(0, 2).join(', ')}${coreMissing.length > 2 ? ` +${coreMissing.length - 2}` : ''}`;
+    status.className = 'submit-status';
+    return;
+  }
+  // All core fields OK → allow submit regardless of doc slots
+  const docMissing = cfg.required.filter(s => !s.gen && !formState.slots[s.id]).length;
+  btn.disabled = false;
+  if (docMissing > 0) {
+    status.textContent = `✓ พร้อมบันทึก · ⚠ เตือน ${docMissing}`;
+    status.className = 'submit-status ready';
+  } else {
+    status.textContent = '✓ พร้อมบันทึก';
+    status.className = 'submit-status ready';
+  }
+}
+
+function submitTransaction() {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const code = document.getElementById('f-category').value;
+  const cfg = CAT[code];
+  let subLabel = document.getElementById('f-sublabel').value;
+  if (subLabel === '__other__') subLabel = document.getElementById('f-sublabel-custom').value.trim();
+  const txn = {
+    row_id: ++rowIdCounter,
+    date: document.getElementById('f-date').value,
+    category: code,
+    sub_label: subLabel || undefined,
+    counterparty: undefined, // v8.2: soft-deprecated, kept in schema for seed data compat
+    amount: Number(document.getElementById('f-amount').value),
+    slots: { ...formState.slots },
+    sort_order: (transactions.length + 1) * 1000
+  };
+  if (cfg.requires_ref_accrue_row_id) txn.ref_accrue_row_id = Number(document.getElementById('f-ref-accrue-row-id').value);
+  if (cfg.requires_party && formState.partyId) txn.party_id = formState.partyId;
+  // Dedup check A: exact txn match (v8.2: dedup uses party_id instead of counterparty)
+  const dupA = transactions.find(t =>
+    t.category === code &&
+    t.date === txn.date &&
+    Math.abs(t.amount - txn.amount) < 0.01 &&
+    (t.party_id || '') === (txn.party_id || '')
+  );
+  if (dupA) {
+    const dupPartyName = dupA.counterparty || (dupA.party_id && getPartyById(dupA.party_id)?.name) || '(ไม่ระบุ)';
+    if (!confirm(`⚠ พบรายการคล้ายกัน\n#${dupA.row_id} · ${dupA.date} · ${dupPartyName} · ${fmtAmount(dupA.amount)} · ${CAT[dupA.category].label_th}\n\nยืนยันบันทึกใหม่?`)) return;
+  }
+  txn.created_at = new Date().toISOString();
+  transactions.push(txn);
+  markDirty(`new #${txn.row_id} · ${cfg.label_th}`);
+  // v8.0 soft-required toast: warn if any non-gen required slot missing
+  const docMissing = cfg.required.filter(s => !s.gen && !txn.slots[s.id]).length;
+  if (docMissing > 0) {
+    toast(`✓ บันทึก #${txn.row_id} · ⚠ ${docMissing} เอกสารควรเพิ่มภายหลัง`, 'warn', 4000);
+  } else {
+    toast(`✓ บันทึก #${txn.row_id} แล้ว`);
+  }
+  resetForm(); renderTxnList(); renderCounts();
+}
+
+function resetForm() {
+  ['f-category', 'f-sublabel', 'f-sublabel-custom', 'f-date', 'f-amount', 'f-ref-accrue-row-id'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  // v8.2 — reset preset picker too
+  const mainPreset = document.getElementById('f-amount-preset');
+  if (mainPreset) mainPreset.value = '';
+  document.querySelectorAll('#f-stream .seg-btn, #f-direction .seg-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#f-direction .seg-btn').forEach(b => b.disabled = true);
+  formState = { stream: null, direction: null, slots: {}, partyId: null };
+  document.getElementById('f-category').disabled = true;
+  document.getElementById('f-category').innerHTML = '<option value="">— รอเลือก Stream + Direction —</option>';
+  document.getElementById('f-party-wrap').style.display = 'none';
+  document.getElementById('f-party-selected-info').style.display = 'none';
+  hideSubLabel(); hideAccrueRef(); renderSlots(); renderHumanNote(); updateSubmitState();
+}
+
+// ============================================================================
+// INLINE ACTIONS ON CARDS — Upload/Gen/Refund/Pay
+// ============================================================================
+
+// Upload file into existing txn slot (inline, from detail view)
+function uploadToTxnSlot(txnRowId, slotId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category];
+  const slot = [...(cfg.required || []), ...(cfg.optional || [])].find(s => s.id === slotId);
+  const name = prompt(`Upload file เข้า slot "${slot.label}"\nพิมพ์ชื่อไฟล์:`, `${slotId}_${Date.now()}.pdf`);
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  // Dedup B: filename reuse check (exclude current txn/slot)
+  const used = transactions.find(t => {
+    if (t.row_id === txnRowId && t.slots[slotId] === trimmed) return false;
+    return Object.values(t.slots).includes(trimmed);
+  });
+  if (used) {
+    if (!confirm(`⚠ ชื่อไฟล์นี้เคยใช้แล้ว:\n"${trimmed}" อยู่ใน #${used.row_id}\n\nใช้ชื่อนี้ต่อ?`)) return;
+  }
+  txn.slots[slotId] = trimmed;
+  markDirty(`upload slot #${txnRowId}/${slotId}`);
+  toast(`✓ อัปโหลด ${slotId} ใน #${txnRowId}`);
+  renderTxnList(); renderCounts();
+  setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+}
+
+// Generate self-issued document (placeholder — real PDF gen later)
+// v8.1 — Gen L2: count empty gen-slots in a txn
+function countGenAvailable(t) {
+  const cfg = CAT[t.category]; if (!cfg) return 0;
+  const slots = [...(cfg.required || []), ...(cfg.optional || [])];
+  return slots.filter(s => s.gen && !t.slots[s.id]).length;
+}
+
+// v8.1 — Gen L2: generate all empty gen-slots in a card (staggered 300ms)
+function genAllDocsForTxn(txnRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category]; if (!cfg) return;
+  const slots = [...(cfg.required || []), ...(cfg.optional || [])];
+  const pending = slots.filter(s => s.gen && !txn.slots[s.id]);
+  const total = pending.length;
+  if (total === 0) { toast('เจนครบแล้ว'); return; }
+  toast(`📄 กำลัง gen ${total} ไฟล์...`, 'gen');
+  pending.forEach((s, idx) => {
+    setTimeout(() => {
+      // re-check still empty (avoid overwriting if user uploaded meanwhile)
+      const tx = transactions.find(t => t.row_id === txnRowId); if (!tx) return;
+      if (tx.slots[s.id]) return;
+      tx.slots[s.id] = `${s.id}_${txnRowId}_gen.pdf`;
+      markDirty(`gen-L2 slot #${txnRowId}/${s.id}`);
+      // Final pass: re-render + toast at the end
+      if (idx === total - 1) {
+        renderTxnList(); renderCounts();
+        setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+        toast(`✓ เจนเสร็จ ${total} ไฟล์`, 'gen');
+      }
+    }, 300 * (idx + 1));
+  });
+}
+
+function genDocForTxnSlot(txnRowId, slotId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category];
+  const slot = [...(cfg.required || []), ...(cfg.optional || [])].find(s => s.id === slotId);
+  if (!slot || !slot.gen) return;
+  // Placeholder — in real build, this calls doc generator and returns file URL
+  const docNumber = `DOC-${txn.row_id}-${slotId.toUpperCase()}-${new Date().getFullYear()}`;
+  const filename = `${slotId}_${txn.row_id}_gen.pdf`;
+  // Simulate short delay
+  toast(`กำลัง generate ${slot.label}...`, 'gen');
+  setTimeout(() => {
+    txn.slots[slotId] = filename;
+    markDirty(`gen slot #${txnRowId}/${slotId}`);
+    toast(`📄 Generated: ${docNumber}`, 'gen');
+    renderTxnList(); renderCounts();
+    setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+  }, 600);
+}
+
+// Open Refund inline form
+function openRefundForm(txnRowId) {
+  inlineFormState = { txnRowId, mode: 'refund', slots: {} };
+  const srcTxn = transactions.find(t => t.row_id === txnRowId); if (!srcTxn) return;
+  const cardEl = document.querySelector(`.txn-row[data-id="${txnRowId}"]`);
+  cardEl.querySelector('.inline-form.refund').classList.remove('hidden');
+  cardEl.querySelector('.inline-form.pay')?.classList.add('hidden');
+  cardEl.querySelector('.rf-date').value = new Date().toISOString().slice(0, 10);
+  cardEl.querySelector('.rf-amount').value = srcTxn.amount;
+  cardEl.querySelector('.rf-reason').value = '';
+  renderInlineSlots(txnRowId, 'refund');
+  updateInlineSubmitState(txnRowId, 'refund');
+}
+
+// Open Pay inline form (for ACCRUE → PAY)
+function openPayForm(accrueRowId) {
+  inlineFormState = { txnRowId: accrueRowId, mode: 'pay', slots: {} };
+  const accrueTxn = transactions.find(t => t.row_id === accrueRowId); if (!accrueTxn) return;
+  const payCode = PAY_MAP[accrueTxn.category];
+  const payCfg = CAT[payCode]; if (!payCfg) return;
+  const cardEl = document.querySelector(`.txn-row[data-id="${accrueRowId}"]`);
+  cardEl.querySelector('.inline-form.pay').classList.remove('hidden');
+  cardEl.querySelector('.inline-form.refund')?.classList.add('hidden');
+  cardEl.querySelector('.pf-date').value = new Date().toISOString().slice(0, 10);
+  // default amount = accrue × (1 - WHT rate)
+  const whtRate = payCfg.wht_rate || 0;
+  cardEl.querySelector('.pf-amount').value = Math.round(accrueTxn.amount * (1 - whtRate));
+  renderInlineSlots(accrueRowId, 'pay');
+  updateInlineSubmitState(accrueRowId, 'pay');
+}
+
+function openLoanRepayForm(loanRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  inlineFormState = { txnRowId: loanRowId, mode: 'loan_repay', slots: {} };
+  const loanTxn = transactions.find(t => t.row_id === loanRowId); if (!loanTxn) return;
+  const cardEl = document.querySelector(`.txn-row[data-id="${loanRowId}"]`);
+  cardEl.querySelector('.inline-form.loan-repay').classList.remove('hidden');
+  cardEl.querySelector('.inline-form.refund')?.classList.add('hidden');
+  cardEl.querySelector('.inline-form.pay')?.classList.add('hidden');
+  cardEl.querySelector('.lr-date').value = new Date().toISOString().slice(0, 10);
+  cardEl.querySelector('.lr-amount').value = getLoanOutstanding(loanTxn);
+  renderInlineSlots(loanRowId, 'loan_repay');
+  updateInlineSubmitState(loanRowId, 'loan_repay');
+}
+
+function closeInlineForm(txnRowId) {
+  const cardEl = document.querySelector(`.txn-row[data-id="${txnRowId}"]`);
+  cardEl.querySelectorAll('.inline-form').forEach(f => f.classList.add('hidden'));
+  inlineFormState = { txnRowId: null, mode: null, slots: {} };
+}
+
+function renderInlineSlots(txnRowId, mode) {
+  const srcTxn = transactions.find(t => t.row_id === txnRowId); if (!srcTxn) return;
+  const targetCode = mode === 'refund' ? REFUND_MAP[srcTxn.category] : (mode === 'pay' ? PAY_MAP[srcTxn.category] : LOAN_REPAY_MAP[srcTxn.category]);
+  const cfg = CAT[targetCode];
+  const cardEl = document.querySelector(`.txn-row[data-id="${txnRowId}"]`);
+  const slotsArea = cardEl.querySelector(mode === 'refund' ? '.rf-slots' : (mode === 'pay' ? '.pf-slots' : '.lr-slots'));
+  let html = `<div class="slots-section" style="margin-top:6px;"><div class="slots-section-title"><span>⭐ Required</span><span class="count">${cfg.required.length} slots</span></div>`;
+  cfg.required.forEach(slot => html += renderFormSlotHTML(slot, 'required', !!inlineFormState.slots[slot.id], inlineFormState.slots[slot.id]));
+  html += '</div>';
+  if (cfg.optional && cfg.optional.length) {
+    html += `<div class="slots-section"><div class="slots-section-title"><span>○ Optional</span><span class="count">${cfg.optional.length} slots</span></div>`;
+    cfg.optional.forEach(slot => html += renderFormSlotHTML(slot, 'optional', !!inlineFormState.slots[slot.id], inlineFormState.slots[slot.id]));
+    html += '</div>';
+  }
+  slotsArea.innerHTML = html;
+  slotsArea.querySelectorAll('.slot').forEach(el => {
+    const handler = () => {
+      const slotId = el.dataset.slot;
+      const name = prompt('(MVP simulate upload)\nพิมพ์ชื่อไฟล์:', `${slotId}_${Date.now()}.pdf`);
+      if (!name || !name.trim()) return;
+      inlineFormState.slots[slotId] = name.trim();
+      renderInlineSlots(txnRowId, mode);
+      updateInlineSubmitState(txnRowId, mode);
+    };
+    el.addEventListener('click', handler);
+    el.addEventListener('touchstart', () => el.classList.add('touched'));
+    el.addEventListener('touchend', (e) => { e.preventDefault(); el.classList.remove('touched'); handler(); });
+  });
+}
+
+function updateInlineSubmitState(txnRowId, mode) {
+  const srcTxn = transactions.find(t => t.row_id === txnRowId); if (!srcTxn) return;
+  const targetCode = mode === 'refund' ? REFUND_MAP[srcTxn.category] : (mode === 'pay' ? PAY_MAP[srcTxn.category] : LOAN_REPAY_MAP[srcTxn.category]);
+  const cfg = CAT[targetCode];
+  const cardEl = document.querySelector(`.txn-row[data-id="${txnRowId}"]`);
+  const prefix = mode === 'refund' ? '.rf-' : (mode === 'pay' ? '.pf-' : '.lr-');
+  const btn = cardEl.querySelector(prefix + 'submit-btn');
+  const status = cardEl.querySelector(prefix + 'status');
+  const date = cardEl.querySelector(prefix + 'date').value;
+  const amount = cardEl.querySelector(prefix + 'amount').value;
+  const missingSlots = cfg.required.filter(s => !inlineFormState.slots[s.id]);
+  const missing = [...missingSlots.map(s => s.id)];
+  if (!date) missing.push('date');
+  if (!amount) missing.push('amount');
+  if (mode === 'refund') {
+    const reason = cardEl.querySelector('.rf-reason').value;
+    if (!reason) missing.push('reason');
+  }
+  if (missing.length) {
+    btn.disabled = true;
+    status.textContent = `ขาด: ${missing.slice(0, 2).join(', ')}${missing.length > 2 ? ` +${missing.length - 2}` : ''}`;
+    status.className = 'submit-status';
+  } else {
+    btn.disabled = false;
+    status.textContent = mode === 'refund' ? '✓ พร้อมคืนเงิน' : (mode === 'pay' ? '✓ พร้อมจ่าย' : '✓ พร้อมคืนเงินกู้');
+    status.className = 'submit-status ready';
+  }
+}
+
+function submitInlineForm(txnRowId, mode) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const srcTxn = transactions.find(t => t.row_id === txnRowId); if (!srcTxn) return;
+  const targetCode = mode === 'refund' ? REFUND_MAP[srcTxn.category] : (mode === 'pay' ? PAY_MAP[srcTxn.category] : LOAN_REPAY_MAP[srcTxn.category]);
+  const cardEl = document.querySelector(`.txn-row[data-id="${txnRowId}"]`);
+  const prefix = mode === 'refund' ? '.rf-' : (mode === 'pay' ? '.pf-' : '.lr-');
+  const date = cardEl.querySelector(prefix + 'date').value;
+  const amount = Number(cardEl.querySelector(prefix + 'amount').value);
+  if (mode === 'loan_repay') {
+    const outstanding = getLoanOutstanding(srcTxn);
+    if (amount > outstanding + 0.01) {
+      if (!confirm(`⚠ ยอดคืน ${amount.toLocaleString('th-TH')} เกินยอดค้างเหลือ ${outstanding.toLocaleString('th-TH')}\n\nต้องการคืนเกินจริงๆหรือไม่?`)) return;
+    }
+  }
+  const newTxn = {
+    row_id: ++rowIdCounter,
+    date,
+    category: targetCode,
+    sub_label: srcTxn.sub_label,
+    counterparty: srcTxn.counterparty,
+    amount,
+    slots: { ...inlineFormState.slots },
+    sort_order: (transactions.length + 1) * 1000
+  };
+  if (mode === 'refund') {
+    newTxn.ref_row_id = srcTxn.row_id;
+    newTxn.refund_reason = cardEl.querySelector('.rf-reason').value;
+  } else if (mode === 'pay') {
+    newTxn.ref_accrue_row_id = srcTxn.row_id;
+  } else if (mode === 'loan_repay') {
+    newTxn.ref_loan_row_id = srcTxn.row_id;
+  }
+  transactions.push(newTxn);
+  markDirty(`${mode} #${newTxn.row_id}`);
+  const toastMsg = mode === 'refund' ? `↩ คืนเงิน #${newTxn.row_id} → #${srcTxn.row_id}` : (mode === 'pay' ? `💰 จ่าย #${newTxn.row_id} → #${srcTxn.row_id}` : `💰 Repay เงินกู้ #${newTxn.row_id} → #${srcTxn.row_id}`);
+  toast(toastMsg);
+  inlineFormState = { txnRowId: null, mode: null, slots: {} };
+  renderTxnList(); renderCounts();
+}
+
+// ============================================================================
+// RENDER TRANSACTIONS
+// ============================================================================
+function renderTxnList() {
+  const list = document.getElementById('txn-list');
+  // v8.0 PARENT/CHILD: children (ref_loan_row_id / ref_accrue_row_id / ref_row_id) hidden from main list
+  let filtered = [...transactions].filter(t => !isChildRow(t)).sort((a, b) => a.sort_order - b.sort_order);
+  // v8.1 — Time filter (row 1, independent)
+  if (activeTimeFilter === 'today') filtered = filtered.filter(t => t.date === todayStr());
+  else if (activeTimeFilter === 'yesterday') filtered = filtered.filter(t => t.date === yesterdayStr());
+  else if (activeTimeFilter === '7d') { const c = nDaysAgoStr(6); filtered = filtered.filter(t => t.date >= c && t.date <= todayStr()); }
+  else if (activeTimeFilter === 'thisMonth') { const s = monthStartStr(); filtered = filtered.filter(t => t.date >= s && t.date <= todayStr()); }
+  else if (activeTimeFilter === 'lastMonth') { const s = monthStartNMonthsAgoStr(1); const e = monthEndNMonthsAgoStr(1); filtered = filtered.filter(t => t.date >= s && t.date <= e); }
+  else if (activeTimeFilter === 'thisYear') { const s = yearStartStr(); filtered = filtered.filter(t => t.date >= s && t.date <= todayStr()); }
+  else if (activeTimeFilter === 'custom') {
+    if (customDateRange.start && customDateRange.end) filtered = filtered.filter(t => t.date >= customDateRange.start && t.date <= customDateRange.end);
+  }
+  // v8.1 — Stream filter (row 2, independent)
+  if (activeStreamFilter === 'A') filtered = filtered.filter(t => CAT[t.category] && CAT[t.category].stream === 'A');
+  else if (activeStreamFilter === 'B') filtered = filtered.filter(t => CAT[t.category] && CAT[t.category].stream === 'B');
+  // v8.1 — Status filter (row 3, independent, stackable)
+  // "refund" = parents with refund children (auto-expand below); "loan" = parents only (children hidden already)
+  if (activeStatusFilter === 'complete') filtered = filtered.filter(t => getIncompleteSlots(t).length === 0);
+  else if (activeStatusFilter === 'incomplete') filtered = filtered.filter(t => getIncompleteSlots(t).length > 0);
+  else if (activeStatusFilter === 'accrue') filtered = filtered.filter(t => CAT[t.category] && CAT[t.category].is_accrue);
+  else if (activeStatusFilter === 'unpaid') filtered = filtered.filter(t => CAT[t.category] && CAT[t.category].is_accrue && !isPaidAccrue(t));
+  else if (activeStatusFilter === 'hasVat') filtered = filtered.filter(t => CAT[t.category] && (CAT[t.category].vat || 0) > 0);
+  else if (activeStatusFilter === 'hasWht') filtered = filtered.filter(t => {
+    const c = CAT[t.category]; if (!c) return false;
+    if (c.wht_rate && c.wht_rate > 0) return true;
+    const slots = [...(c.required || []), ...(c.optional || [])];
+    return slots.some(s => s.id === 'wht_cert');
+  });
+  else if (activeStatusFilter === 'loan') filtered = filtered.filter(t => CAT[t.category] && CAT[t.category].group === 'Loan');
+  else if (activeStatusFilter === 'refund') filtered = filtered.filter(t => isRefunded(t));
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">ไม่มี transaction</div><div class="small">ในตัวกรองนี้</div></div>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(t => {
+    const cfg = CAT[t.category]; if (!cfg) return;
+    const missing = getIncompleteSlots(t);
+    const isRefundRow = t.category.includes('REFUND');
+    const isAccrue = cfg.is_accrue;
+    const isPayStage = cfg.is_pay_stage;
+    const paidStatus = isAccrue ? (isPaidAccrue(t) ? 'paid' : 'unpaid') : null;
+    const refundedOut = cfg.refundable && isRefunded(t);
+    const refundRow = refundedOut ? getRefundRow(t) : null;
+    const payRow = isAccrue && isPaidAccrue(t) ? getPayRow(t) : null;
+
+    let badges = '';
+    if (cfg.stream === 'A') badges += '<span class="badge stream-a">A</span>';
+    else if (cfg.stream === 'B') badges += '<span class="badge stream-b">B</span>';
+    if (missing.length === 0) badges += '<span class="badge complete">✓ ครบ</span>';
+    else badges += `<span class="badge incomplete">เตือน ${missing.length}</span>`;
+    if (paidStatus === 'unpaid') badges += '<span class="badge unpaid">ยังไม่จ่าย</span>';
+    if (paidStatus === 'paid') badges += '<span class="badge paid">paid ✓</span>';
+    if (isRefundRow) badges += '<span class="badge refund">ลูกค้าขอคืนเงิน</span>';
+    if (refundedOut) badges += '<span class="badge refunded">↩ คืนแล้ว</span>';
+    if (isAccrue) badges += '<span class="badge accrue">ตั้งหนี้</span>';
+    if (isPayStage) badges += '<span class="badge accrue">pay stage</span>';
+
+    // Loan repay state (P2)
+    const isLoanRepayable = cfg.repayable && LOAN_REPAY_MAP[t.category];
+    const isLoanRepayRow = Object.values(LOAN_REPAY_MAP).includes(t.category) && t.ref_loan_row_id;
+    let loanOutstanding = 0;
+    if (isLoanRepayable) {
+      const loanStatus = getLoanStatus(t);
+      const loanPct = getLoanRepaidPct(t);
+      loanOutstanding = getLoanOutstanding(t);
+      if (loanStatus === 'unrepaid') badges += '<span class="badge incomplete">unrepaid</span>';
+      else if (loanStatus === 'partial') badges += `<span class="badge accrue">partial ${loanPct}%</span>`;
+      else if (loanStatus === 'repaid') badges += '<span class="badge paid">repaid ✓</span>';
+    }
+    if (isLoanRepayRow) badges += '<span class="badge refund">loan repay</span>';
+
+    const amountClass = cfg.direction === 'IN' ? 'in' : 'out';
+    const amountSign = cfg.direction === 'IN' ? '+' : '−';
+
+    // Build detail slot rows with inline actions
+    const renderDetailSlot = (s, kind) => {
+      const filled = !!t.slots[s.id];
+      const genButton = s.gen ? `<button class="mini-btn gen" data-action="txn-gen" data-txn="${t.row_id}" data-slot="${s.id}">📄 Gen</button>` : '';
+      const uploadButton = `<button class="mini-btn" data-action="txn-upload" data-txn="${t.row_id}" data-slot="${s.id}">📤 Upload</button>`;
+      const genTagHTML = s.gen ? '<span class="ds-gen-tag">gen</span>' : '';
+      const filledActions = filled
+        ? `<div class="ds-file-wrap">
+             <div class="ds-file">${t.slots[s.id]}</div>
+             <div class="ds-actions">
+               <button class="ds-file-btn" data-action="txn-view" data-txn="${t.row_id}" data-slot="${s.id}">📄 Preview</button>
+               <button class="ds-file-btn download" data-action="txn-download" data-txn="${t.row_id}" data-slot="${s.id}">⬇ Download</button>
+               <button class="ds-file-btn del" data-action="slot-delete" data-txn="${t.row_id}" data-slot="${s.id}" title="ลบไฟล์">✗</button>
+             </div>
+           </div>`
+        : `${genButton}${uploadButton}`;
+      return `
+        <div class="detail-slot-row ${kind === 'required' ? 'req' : 'opt'} ${filled ? 'filled' : 'missing actionable'}">
+          <div class="ds-icon">${kind === 'required' ? '⭐' : '○'}</div>
+          <div class="ds-label">${s.label}</div>
+          ${genTagHTML}
+          ${filledActions}
+        </div>`;
+    };
+
+    // v8.0 — sub-card (child row mini display) renderer
+    const renderSubCard = (childTxn) => {
+      const ccfg = CAT[childTxn.category]; if (!ccfg) return '';
+      const slotTotal = ccfg.required.length + (ccfg.optional || []).length;
+      const slotFilled = Object.keys(childTxn.slots || {}).length;
+      const slotMissing = ccfg.required.filter(s => !s.gen && !childTxn.slots[s.id]).length;
+      const slotCls = slotMissing > 0 ? 'warn' : 'ok';
+      const slotText = `${slotFilled}/${slotTotal} ไฟล์${slotMissing > 0 ? ` · ⚠ ${slotMissing}` : ' ✓'}`;
+      const amtClass = ccfg.direction === 'IN' ? 'in' : 'out';
+      const amtSign = ccfg.direction === 'IN' ? '+' : '−';
+      return `
+        <div class="sub-card" data-child-id="${childTxn.row_id}">
+          <div class="sc-date">${childTxn.date}</div>
+          <div class="sc-body">
+            <div><span class="sc-id" data-jump="${childTxn.row_id}">#${childTxn.row_id}</span> · ${ccfg.label_th}</div>
+            <div class="sc-meta">${childTxn.refund_reason ? 'เหตุผล: ' + childTxn.refund_reason : (ccfg.direction === 'OUT' ? 'จ่าย' : 'รับ')}</div>
+          </div>
+          <div class="sc-slots ${slotCls}">${slotText}</div>
+          <div class="sc-amount ${amtClass}">${amtSign}${fmtAmount(childTxn.amount)}</div>
+        </div>`;
+    };
+
+    html += `
+      <div class="txn-row" data-id="${t.row_id}" data-dir="${cfg.direction.toLowerCase()}" draggable="true">
+        <div class="txn-head">
+          <div class="drag-handle">⋮⋮</div>
+          <div class="txn-date">${t.date}</div>
+          <div class="txn-main">
+            <div class="txn-title">#${t.row_id} · ${t.counterparty || (t.party_id && getPartyById(t.party_id)?.name) || '(ไม่ระบุ)'} · ${cfg.label_th}</div>
+            <div class="txn-code">${t.category}${t.sub_label ? ' · <span class="sub-label">'+t.sub_label+'</span>' : ''}</div>
+          </div>
+          <div>${badges}</div>
+          <div class="txn-amount ${amountClass}">${amountSign}${fmtAmount(t.amount)}</div>
+        </div>
+        <div class="txn-detail">
+          <div class="txn-detail-inner">
+            ${(() => { const n = countGenAvailable(t); return n > 0 ? `<div class="gen-l2-bar"><button class="action-btn gen-l2-btn" data-action="gen-all-for-txn" data-id="${t.row_id}">📄 เจนเอกสารของรายการนี้ (${n})</button></div>` : ''; })()}
+            <div class="detail-grid">
+              <div class="detail-item"><div class="k">Stream</div><div class="v">${cfg.stream}</div></div>
+              <div class="detail-item"><div class="k">Direction</div><div class="v">${cfg.direction}</div></div>
+              <div class="detail-item"><div class="k">VAT</div><div class="v">${cfg.vat}%</div></div>
+              ${t.created_at ? `<div class="detail-item"><div class="k">Added</div><div class="v" style="font-size:11px; color: var(--muted);">${humanAge(t.created_at)}</div></div>` : ''}
+              ${t.party_id ? (() => { const p = getPartyById(t.party_id); return p ? `<div class="detail-item"><div class="k">${cfg.party_label || 'Party'}</div><div class="v">${p.type === 'company' ? '🏢' : '👤'} ${p.name}${p.nickname ? ` · ${p.nickname}` : ''}${p.related_party ? ' · RELATED' : ''}</div></div>` : ''; })() : ''}
+              ${t.ref_row_id ? `<div class="detail-item"><div class="k">Ref Row ID</div><div class="v ref" data-jump="${t.ref_row_id}">#${t.ref_row_id}</div></div>` : ''}
+              ${t.refund_reason ? `<div class="detail-item"><div class="k">Refund Reason</div><div class="v">${t.refund_reason}</div></div>` : ''}
+              ${t.ref_accrue_row_id ? `<div class="detail-item"><div class="k">Ref Accrue Row</div><div class="v ref" data-jump="${t.ref_accrue_row_id}">#${t.ref_accrue_row_id}</div></div>` : ''}
+              ${t.ref_loan_row_id ? `<div class="detail-item"><div class="k">Ref Loan Row</div><div class="v ref" data-jump="${t.ref_loan_row_id}">#${t.ref_loan_row_id}</div></div>` : ''}
+              ${refundRow ? `<div class="detail-item"><div class="k">Refunded by</div><div class="v ref" data-jump="${refundRow.row_id}">#${refundRow.row_id}</div></div>` : ''}
+              ${payRow ? `<div class="detail-item"><div class="k">Paid by</div><div class="v ref" data-jump="${payRow.row_id}">#${payRow.row_id}</div></div>` : ''}
+            </div>
+            <div class="detail-slots-title">
+              <span>Files (${Object.keys(t.slots).length} of ${cfg.required.length + (cfg.optional?.length || 0)})</span>
+              ${missing.length ? '<span class="hint">กดที่ missing เพื่อ Upload หรือ Gen</span>' : ''}
+            </div>
+            ${cfg.required.map(s => renderDetailSlot(s, 'required')).join('')}
+            ${(cfg.optional || []).map(s => renderDetailSlot(s, 'optional')).join('')}
+
+            <!-- Card actions -->
+            ${(cfg.refundable && !refundedOut) || (cfg.payable && !isPaidAccrue(t)) || (isLoanRepayable && !isLoanFullyRepaid(t)) ? `
+              <div class="card-actions">
+                ${cfg.refundable && !refundedOut ? `<button class="action-btn refund" data-action="refund-open" data-id="${t.row_id}">↩ Refund เงินคืน</button>` : ''}
+                ${cfg.payable && !isPaidAccrue(t) ? `<button class="action-btn pay" data-action="pay-open" data-id="${t.row_id}">💰 Pay จ่ายเงิน</button>` : ''}
+                ${isLoanRepayable && !isLoanFullyRepaid(t) ? `<button class="action-btn pay" data-action="loan-repay-open" data-id="${t.row_id}">💰 Repay เงินกู้ · เหลือ ${fmtAmount(loanOutstanding)}</button>` : ''}
+              </div>` : ''}
+
+            <!-- v8.0 SUB-CARD SECTIONS -->
+            ${isLoanRepayable && getLoanRepays(t).length ? `
+              <div class="sub-card-section">
+                <div class="sub-card-section-title">
+                  <span>💰 ประวัติการคืนเงินกู้</span>
+                  <span class="count">${getLoanRepays(t).length} รายการ · คืนแล้ว ${fmtAmount(getLoanRepaidTotal(t))} / ${fmtAmount(t.amount)} · เหลือ ${fmtAmount(getLoanOutstanding(t))}</span>
+                </div>
+                ${getLoanRepays(t).map(r => renderSubCard(r)).join('')}
+              </div>` : ''}
+            ${payRow ? `
+              <div class="sub-card-section">
+                <div class="sub-card-section-title">
+                  <span>💵 Stage 2: จ่ายจริง</span>
+                  <span class="count">1 รายการ</span>
+                </div>
+                ${renderSubCard(payRow)}
+              </div>` : ''}
+            ${refundRow ? `
+              <div class="sub-card-section">
+                <div class="sub-card-section-title">
+                  <span>↩ ลูกค้าขอคืนเงิน</span>
+                  <span class="count">1 รายการ</span>
+                </div>
+                ${renderSubCard(refundRow)}
+              </div>` : ''}
+
+            <!-- v8.0 CRUD: Edit / Delete row -->
+            <div class="card-actions" style="margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px;">
+              <button class="action-btn edit" data-action="edit-row-open" data-id="${t.row_id}">✏ แก้ไขรายการ</button>
+              <button class="action-btn delete" data-action="delete-row-open" data-id="${t.row_id}">🗑 ลบรายการ</button>
+            </div>
+
+            <!-- Refund inline form -->
+            ${cfg.refundable && !refundedOut ? `
+              <div class="inline-form refund hidden">
+                <div class="inline-form-title">
+                  <span>↩ ลูกค้าขอคืนเงิน #${t.row_id}</span>
+                  <button class="inline-form-close" data-action="inline-close" data-id="${t.row_id}">✕</button>
+                </div>
+                <div class="row-2">
+                  <div class="field"><label class="field-label"><span>วันที่คืน</span></label><input type="date" class="rf-date"></div>
+                  <div class="field"><label class="field-label"><span>ยอดคืน (แก้ได้ถ้า partial)</span></label><div class="amount-with-preset"><input type="number" class="rf-amount" step="0.01"><div class="preset-picker-row"><select class="preset-picker">${presetOptionsHTML()}</select><button type="button" class="link-btn preset-add-link" data-preset-add-for="rf-amount">+ เพิ่ม Preset</button></div></div></div>
+                </div>
+                <div class="field">
+                  <label class="field-label"><span>เหตุผล <span class="required">*</span></span></label>
+                  <select class="rf-reason">
+                    <option value="">— เลือกเหตุผล —</option>
+                    <option value="customer_request">customer_request</option>
+                    <option value="chargeback">chargeback</option>
+                    <option value="duplicate_payment">duplicate_payment</option>
+                    <option value="refund_policy">refund_policy</option>
+                    <option value="other">other</option>
+                  </select>
+                </div>
+                <div class="rf-slots"></div>
+                <div class="inline-submit-bar">
+                  <div class="submit-status rf-status">ยังขาด</div>
+                  <button class="inline-submit-btn rf-submit-btn" data-action="inline-submit" data-mode="refund" data-id="${t.row_id}" disabled>ยืนยันคืนเงิน</button>
+                </div>
+              </div>` : ''}
+
+            <!-- Pay inline form -->
+            ${cfg.payable && !isPaidAccrue(t) ? `
+              <div class="inline-form pay hidden">
+                <div class="inline-form-title">
+                  <span>💰 จ่ายรายการตั้งหนี้ #${t.row_id}</span>
+                  <button class="inline-form-close" data-action="inline-close" data-id="${t.row_id}">✕</button>
+                </div>
+                <div class="row-2">
+                  <div class="field"><label class="field-label"><span>วันที่จ่าย</span></label><input type="date" class="pf-date"></div>
+                  <div class="field"><label class="field-label"><span>ยอดสุทธิ (หลัง WHT)</span></label><div class="amount-with-preset"><input type="number" class="pf-amount" step="0.01"><div class="preset-picker-row"><select class="preset-picker">${presetOptionsHTML()}</select><button type="button" class="link-btn preset-add-link" data-preset-add-for="pf-amount">+ เพิ่ม Preset</button></div></div></div>
+                </div>
+                <div class="pf-slots"></div>
+                <div class="inline-submit-bar">
+                  <div class="submit-status pf-status">ยังขาด</div>
+                  <button class="inline-submit-btn pf-submit-btn" data-action="inline-submit" data-mode="pay" data-id="${t.row_id}" disabled>ยืนยันจ่ายเงิน</button>
+                </div>
+              </div>` : ''}
+
+            <!-- Loan Repay inline form (P2 partial) -->
+            ${isLoanRepayable && !isLoanFullyRepaid(t) ? `
+              <div class="inline-form loan-repay hidden">
+                <div class="inline-form-title">
+                  <span>💰 Repay LOAN #${t.row_id} · เหลือ ${fmtAmount(loanOutstanding)}</span>
+                  <button class="inline-form-close" data-action="inline-close" data-id="${t.row_id}">✕</button>
+                </div>
+                <div class="row-2">
+                  <div class="field"><label class="field-label"><span>วันที่คืน</span></label><input type="date" class="lr-date"></div>
+                  <div class="field"><label class="field-label"><span>ยอดคืน (partial ได้)</span></label><div class="amount-with-preset"><input type="number" class="lr-amount" step="0.01"><div class="preset-picker-row"><select class="preset-picker">${presetOptionsHTML()}</select><button type="button" class="link-btn preset-add-link" data-preset-add-for="lr-amount">+ เพิ่ม Preset</button></div></div></div>
+                </div>
+                <div class="lr-slots"></div>
+                <div class="inline-submit-bar">
+                  <div class="submit-status lr-status">ยังขาด</div>
+                  <button class="inline-submit-btn lr-submit-btn" data-action="inline-submit" data-mode="loan_repay" data-id="${t.row_id}" disabled>ยืนยันคืนเงินกู้</button>
+                </div>
+              </div>` : ''}
+
+          </div>
+        </div>
+      </div>`;
+  });
+  list.innerHTML = html;
+  // v8.0: refund filter auto-expand parents (per locked decision #3)
+  if (activeStatusFilter === 'refund') {
+    list.querySelectorAll('.txn-row').forEach(row => row.classList.add('expanded'));
+  }
+  wireRowInteractions();
+}
+
+
+
+// ============================================================================
+// v8.0 CRUD — Slot file delete (with undo toast)
+// ============================================================================
+function deleteSlotFile(txnRowId, slotId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const oldFilename = txn.slots[slotId];
+  if (!oldFilename) return;
+  // Remove slot value
+  delete txn.slots[slotId];
+  markDirty(`delete slot #${txnRowId}/${slotId}`);
+  renderTxnList(); renderCounts();
+  setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+  // Undo toast
+  showUndoToast('ลบไฟล์', oldFilename, () => {
+    const stillExists = transactions.find(t => t.row_id === txnRowId);
+    if (!stillExists) return;
+    stillExists.slots[slotId] = oldFilename;
+    markDirty(`undo-delete slot #${txnRowId}/${slotId}`);
+    renderTxnList(); renderCounts();
+    setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+  }, 4000);
+}
+
+// ============================================================================
+// v8.0 CRUD — Edit row (modal)
+// ============================================================================
+let editingRowId = null;
+function openEditRowModal(txnRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category]; if (!cfg) return;
+  editingRowId = txnRowId;
+  const children = getChildrenOf(txn);
+  const categoryLocked = children.length > 0;
+  // Build category options (same stream + direction, non-hidden — but current category always included)
+  const catMatches = Object.keys(CAT).filter(code => {
+    const c = CAT[code];
+    if (code === txn.category) return true; // current category always visible
+    return c.stream === cfg.stream && c.direction === cfg.direction && !c.hidden;
+  });
+  const catOptions = catMatches.map(code =>
+    `<option value="${code}" ${code === txn.category ? 'selected' : ''}>${CAT[code].label_th}</option>`
+  ).join('');
+  // Sub-label
+  let subLabelHTML = '';
+  if (cfg.sub_label_presets) {
+    const isPreset = cfg.sub_label_presets.includes(txn.sub_label || '');
+    const opts = cfg.sub_label_presets.map(p =>
+      `<option value="${p}" ${p === txn.sub_label ? 'selected' : ''}>${p}</option>`
+    ).join('');
+    subLabelHTML = `
+      <div class="field">
+        <label class="field-label"><span>Sub-label</span></label>
+        <select id="er-sublabel">
+          <option value="">— ไม่ระบุ —</option>
+          ${opts}
+          <option value="__other__" ${txn.sub_label && !isPreset ? 'selected' : ''}>อื่น ๆ (พิมพ์เอง)</option>
+        </select>
+        <input type="text" id="er-sublabel-custom" placeholder="พิมพ์เอง..." style="margin-top:8px; ${txn.sub_label && !isPreset ? '' : 'display:none;'}" value="${txn.sub_label && !isPreset ? (txn.sub_label || '').replace(/"/g, '&quot;') : ''}">
+      </div>`;
+  }
+  // Party
+  let partyHTML = '';
+  if (cfg.requires_party) {
+    const suggestedType = cfg.party_suggested_type || 'any';
+    const filtered = suggestedType === 'any' ? parties : parties.filter(p => p.type === suggestedType);
+    const partyOpts = filtered.map(p => {
+      const nn = p.nickname ? ` · ${p.nickname}` : '';
+      const rel = p.related_party ? ' · RELATED' : '';
+      return `<option value="${p.id}" ${p.id === txn.party_id ? 'selected' : ''}>${(p.type === 'company' ? '🏢 ' : '👤 ')}${p.name}${nn}${rel}</option>`;
+    }).join('');
+    partyHTML = `
+      <div class="field">
+        <label class="field-label"><span>${cfg.party_label || 'Party'}</span></label>
+        <select id="er-party">
+          <option value="">— เลือก —</option>
+          ${partyOpts}
+        </select>
+      </div>`;
+  }
+  // Counterparty
+  let cpLabel = cfg.requires_counterparty ? (cfg.counterparty_label || 'Counterparty') : 'Counterparty';
+  // Build modal body
+  const body = `
+    <div class="modal-body">
+      ${categoryLocked ? `<div class="human-note" style="margin-top:0; margin-bottom:14px;"><span class="hn-label">🔒 หมวดหมู่ล็อก</span>รายการนี้มี ${children.length} รายการลูกอ้างอิงอยู่ · เปลี่ยนหมวดหมู่ไม่ได้ · ลบรายการลูกก่อนถ้าต้องการเปลี่ยน</div>` : ''}
+      <div class="field">
+        <label class="field-label"><span>Category ${categoryLocked ? '(ล็อก)' : ''}</span></label>
+        <select id="er-category" ${categoryLocked ? 'disabled' : ''}>${catOptions}</select>
+      </div>
+      ${subLabelHTML}
+      <div class="row-2">
+        <div class="field">
+          <label class="field-label"><span>Date <span class="required">*</span></span></label>
+          <input type="date" id="er-date" value="${txn.date}">
+        </div>
+        <div class="field">
+          <label class="field-label"><span>Amount <span class="required">*</span></span></label>
+          <div class="amount-with-preset">
+            <input type="number" id="er-amount" step="0.01" value="${txn.amount}">
+            <div class="preset-picker-row">
+              <select class="preset-picker" id="er-amount-preset">${presetOptionsHTML()}</select>
+              <button type="button" class="link-btn preset-add-link" data-preset-add-for="er-amount">+ เพิ่ม Preset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      ${partyHTML}
+      <div class="inline-submit-bar" style="margin-top: 16px;">
+        <button type="button" class="action-btn" id="er-cancel" style="background: transparent;">✕ ยกเลิก</button>
+        <button type="button" class="inline-submit-btn" id="er-save" style="background: var(--gold); color: var(--bg);">บันทึกการแก้ไข</button>
+      </div>
+    </div>`;
+  // Open modal
+  const modal = document.getElementById('edit-row-modal');
+  modal.querySelector('.modal-title').textContent = `✏ แก้ไข #${txnRowId}`;
+  modal.querySelector('.modal-body-slot').innerHTML = body;
+  modal.classList.add('show');
+  // Wire sub-label custom toggle
+  const subSel = document.getElementById('er-sublabel');
+  const subCustom = document.getElementById('er-sublabel-custom');
+  if (subSel && subCustom) {
+    subSel.addEventListener('change', () => {
+      subCustom.style.display = subSel.value === '__other__' ? 'block' : 'none';
+    });
+  }
+  document.getElementById('er-cancel').addEventListener('click', closeEditRowModal);
+  document.getElementById('er-save').addEventListener('click', () => submitEditRow(txnRowId));
+}
+
+function closeEditRowModal() {
+  document.getElementById('edit-row-modal').classList.remove('show');
+  editingRowId = null;
+}
+
+function submitEditRow(txnRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const date = document.getElementById('er-date').value;
+  const amount = Number(document.getElementById('er-amount').value);
+  if (!date || !amount) { toast('⚠ ต้องระบุ date + amount', 'error'); return; }
+  const newCatEl = document.getElementById('er-category');
+  const newCat = newCatEl && !newCatEl.disabled ? newCatEl.value : txn.category;
+  const newCfg = CAT[newCat]; if (!newCfg) { toast('⚠ category ไม่ถูกต้อง', 'error'); return; }
+  // v8.2: counterparty field removed from UI (still in schema for seed compat)
+  let subLabel = txn.sub_label;
+  const subSel = document.getElementById('er-sublabel');
+  if (subSel) {
+    subLabel = subSel.value;
+    if (subLabel === '__other__') subLabel = document.getElementById('er-sublabel-custom').value.trim();
+    if (!subLabel) subLabel = undefined;
+  }
+  let partyId = txn.party_id;
+  const partyEl = document.getElementById('er-party');
+  if (partyEl) partyId = partyEl.value || undefined;
+  // Apply
+  txn.date = date;
+  txn.amount = amount;
+  // v8.2: counterparty preserved as-is if already on record (soft-deprecated)
+  txn.sub_label = subLabel;
+  if (partyId !== undefined) txn.party_id = partyId;
+  if (newCat !== txn.category) txn.category = newCat;
+  markDirty(`edit #${txnRowId}`);
+  closeEditRowModal();
+  toast(`✓ แก้ไข #${txnRowId} เรียบร้อย`);
+  renderTxnList(); renderCounts();
+  setTimeout(() => { const r = document.querySelector(`.txn-row[data-id="${txnRowId}"]`); if (r) r.classList.add('expanded'); }, 0);
+}
+
+// ============================================================================
+// v8.0 CRUD — Delete row (modal with cascade check)
+// ============================================================================
+let deletingRowId = null;
+function openDeleteRowModal(txnRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const txn = transactions.find(t => t.row_id === txnRowId); if (!txn) return;
+  const cfg = CAT[txn.category]; if (!cfg) return;
+  deletingRowId = txnRowId;
+  const children = getChildrenOf(txn);
+  const hasChildren = children.length > 0;
+  let cascadeHTML = '';
+  if (hasChildren) {
+    const list = children.map(c => `<li>#${c.row_id} · ${c.date} · ${CAT[c.category]?.label_th || c.category} · ${fmtAmount(c.amount)}</li>`).join('');
+    cascadeHTML = `
+      <div class="delete-row-cascade">
+        <span class="dr-cascade-label">⛔ ลบไม่ได้ · มีรายการลูกอ้างอิง</span>
+        ลบรายการลูกต่อไปนี้ก่อน:
+        <ul>${list}</ul>
+      </div>`;
+  }
+  const body = `
+    <div class="delete-row-body">
+      <div class="delete-row-summary">
+        <div class="dr-title">#${txn.row_id} · ${cfg.label_th}</div>
+        <div class="dr-meta">${txn.date} · ${txn.counterparty || '(ไม่ระบุ)'} · ${fmtAmount(txn.amount)}</div>
+      </div>
+      ${cascadeHTML}
+      ${!hasChildren ? '<div style="margin-bottom: 14px; font-size: 13px; color: var(--warm-white);">ยืนยันลบรายการนี้? · การลบจะเอาออกจาก ledger ทันที (ไม่มี audit log ใน MVP)</div>' : ''}
+      <div class="delete-row-actions">
+        <button type="button" class="action-btn" id="dr-cancel" style="background: transparent;">ยกเลิก</button>
+        <button type="button" class="delete-confirm-btn" id="dr-confirm" ${hasChildren ? 'disabled' : ''}>${hasChildren ? 'ลบไม่ได้' : 'ยืนยันลบ'}</button>
+      </div>
+    </div>`;
+  const modal = document.getElementById('delete-row-modal');
+  modal.querySelector('.modal-title').textContent = `🗑 ลบ #${txnRowId}?`;
+  modal.querySelector('.modal-body-slot').innerHTML = body;
+  modal.classList.add('show');
+  document.getElementById('dr-cancel').addEventListener('click', closeDeleteRowModal);
+  if (!hasChildren) {
+    document.getElementById('dr-confirm').addEventListener('click', () => confirmDeleteRow(txnRowId));
+  }
+}
+
+function closeDeleteRowModal() {
+  document.getElementById('delete-row-modal').classList.remove('show');
+  deletingRowId = null;
+}
+
+function confirmDeleteRow(txnRowId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const idx = transactions.findIndex(t => t.row_id === txnRowId);
+  if (idx < 0) return;
+  const [removed] = transactions.splice(idx, 1);
+  markDirty(`delete #${txnRowId}`);
+  closeDeleteRowModal();
+  toast(`🗑 ลบ #${removed.row_id} เรียบร้อย`);
+  renderTxnList(); renderCounts();
+}
+
+function renderCounts() {
+  document.getElementById('txn-count').textContent = transactions.length;
+  document.getElementById('incomplete-count').textContent = transactions.filter(t => getIncompleteSlots(t).length > 0).length;
+}
+
+// ============================================================================
+// ROW INTERACTIONS
+// ============================================================================
+function wireRowInteractions() {
+  document.querySelectorAll('.txn-row').forEach(row => {
+    const head = row.querySelector('.txn-head');
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('.drag-handle')) return;
+      if (e.target.closest('.v.ref')) return;
+      row.classList.toggle('expanded');
+    });
+    row.addEventListener('dragstart', (e) => {
+      row.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', row.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      document.querySelectorAll('.drop-target').forEach(r => r.classList.remove('drop-target'));
+    });
+    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('drop-target'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
+    row.addEventListener('drop', (e) => {
+      e.preventDefault(); row.classList.remove('drop-target');
+      const srcId = Number(e.dataTransfer.getData('text/plain'));
+      const dstId = Number(row.dataset.id);
+      if (srcId !== dstId) reorderTxn(srcId, dstId);
+    });
+  });
+
+  document.querySelectorAll('.v.ref').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = Number(el.dataset.jump);
+      const targetRow = document.querySelector(`.txn-row[data-id="${target}"]`);
+      if (targetRow) {
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetRow.classList.add('expanded');
+        targetRow.style.boxShadow = '0 0 0 2px var(--gold)';
+        setTimeout(() => targetRow.style.boxShadow = '', 1600);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      const id = Number(el.dataset.id || el.dataset.txn);
+      if (action === 'refund-open') openRefundForm(id);
+      else if (action === 'loan-repay-open') openLoanRepayForm(id);
+      else if (action === 'pay-open') openPayForm(id);
+      else if (action === 'inline-close') closeInlineForm(id);
+      else if (action === 'inline-submit') submitInlineForm(id, el.dataset.mode);
+      else if (action === 'txn-upload') uploadToTxnSlot(id, el.dataset.slot);
+      else if (action === 'txn-gen') genDocForTxnSlot(id, el.dataset.slot);
+      else if (action === 'txn-view') openFileViewer(id, el.dataset.slot);
+      else if (action === 'txn-download') toast(`⬇ Download ${transactions.find(t=>t.row_id===id)?.slots[el.dataset.slot] || ''} (simulate)`);
+      // v8.0 CRUD actions
+      else if (action === 'edit-row-open') openEditRowModal(id);
+      else if (action === 'delete-row-open') openDeleteRowModal(id);
+      else if (action === 'slot-delete') deleteSlotFile(id, el.dataset.slot);
+      // v8.1 — Gen L2
+      else if (action === 'gen-all-for-txn') genAllDocsForTxn(id);
+    });
+  });
+
+  // Inline form input listeners
+  document.querySelectorAll('.txn-row').forEach(row => {
+    const id = Number(row.dataset.id);
+    ['.rf-date', '.rf-amount', '.rf-reason'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) { el.addEventListener('input', () => updateInlineSubmitState(id, 'refund')); el.addEventListener('change', () => updateInlineSubmitState(id, 'refund')); }
+    });
+    ['.pf-date', '.pf-amount'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) { el.addEventListener('input', () => updateInlineSubmitState(id, 'pay')); el.addEventListener('change', () => updateInlineSubmitState(id, 'pay')); }
+    });
+    ['.lr-date', '.lr-amount'].forEach(sel => {
+      const el = row.querySelector(sel);
+      if (el) { el.addEventListener('input', () => updateInlineSubmitState(id, 'loan_repay')); el.addEventListener('change', () => updateInlineSubmitState(id, 'loan_repay')); }
+    });
+  });
+}
+
+function reorderTxn(srcId, dstId) {
+  if (isReadOnly) { toast('🔒 Tab นี้ read-only', 'error'); return; }
+  const src = transactions.find(t => t.row_id === srcId);
+  const dst = transactions.find(t => t.row_id === dstId);
+  if (!src || !dst) return;
+  const sorted = [...transactions].sort((a, b) => a.sort_order - b.sort_order);
+  const dstIdx = sorted.findIndex(t => t.row_id === dstId);
+  const prev = dstIdx > 0 ? sorted[dstIdx - 1] : null;
+  if (prev && prev.row_id === srcId) {
+    const next = sorted[dstIdx + 1];
+    src.sort_order = next ? (dst.sort_order + next.sort_order) / 2 : dst.sort_order + 1000;
+  } else {
+    src.sort_order = prev ? (prev.sort_order + dst.sort_order) / 2 : dst.sort_order - 500;
+  }
+  markDirty(`reorder #${srcId}`);
+  renderTxnList();
+  toast(`ย้าย #${srcId} แล้ว`);
+}
+
+// ============================================================================
+// WIRE + INIT
+// ============================================================================
+function wireForm() {
+  document.querySelectorAll('#f-stream .seg-btn').forEach(b => b.addEventListener('click', () => setStream(b.dataset.val)));
+  document.querySelectorAll('#f-direction .seg-btn').forEach(b => b.addEventListener('click', () => { if (!b.disabled) setDirection(b.dataset.val); }));
+  document.getElementById('f-category').addEventListener('change', onCategoryChange);
+  document.getElementById('f-sublabel').addEventListener('change', (e) => {
+    const custom = document.getElementById('f-sublabel-custom');
+    custom.style.display = e.target.value === '__other__' ? 'block' : 'none';
+    if (e.target.value !== '__other__') custom.value = '';
+  });
+  ['f-date', 'f-amount', 'f-ref-accrue-row-id'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateSubmitState);
+    document.getElementById(id).addEventListener('change', updateSubmitState);
+  });
+  document.getElementById('submit-btn').addEventListener('click', submitTransaction);
+}
+
+// v8.1: TIME_FILTER_LABELS removed (chips are now inline — dropdown retired)
+
+function setTimeFilter(val) {
+  activeTimeFilter = val;
+  document.querySelectorAll('.filter-chip.time-chip').forEach(c => c.classList.toggle('active', c.dataset.time === val));
+  const popover = document.getElementById('custom-date-popover');
+  if (val === 'custom') {
+    popover.style.display = 'flex';
+    if (!customDateRange.start) {
+      const now = new Date();
+      customDateRange.start = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+      customDateRange.end = todayStr();
+    }
+    document.getElementById('custom-date-start').value = customDateRange.start || '';
+    document.getElementById('custom-date-end').value = customDateRange.end || '';
+  } else {
+    popover.style.display = 'none';
+  }
+  renderTxnList();
+}
+
+function wireFilters() {
+  // v8.1 — Row 1: time chips (single-select, default "ทั้งหมด")
+  document.querySelectorAll('.filter-chip.time-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.time;
+      if (val === activeTimeFilter) return; // no-op
+      guardMajorAction(`เปลี่ยนช่วงเวลาเป็น ${chip.textContent.trim()}`, () => {
+        setTimeFilter(val);
+      });
+    });
+  });
+
+  // v8.1 — Row 2: stream chips (single-select, default "ทั้งหมด")
+  document.querySelectorAll('.filter-chip.stream-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.stream;
+      if (val === activeStreamFilter) return;
+      guardMajorAction(`เปลี่ยนสายธุรกิจเป็น ${chip.textContent.trim()}`, () => {
+        activeStreamFilter = val;
+        document.querySelectorAll('.filter-chip.stream-chip').forEach(c => c.classList.toggle('active', c.dataset.stream === val));
+        renderTxnList();
+      });
+    });
+  });
+
+  // v8.1 — Row 3: status chips (toggle, null = no filter)
+  document.querySelectorAll('.filter-chip.status-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const newVal = (activeStatusFilter === chip.dataset.status) ? null : chip.dataset.status;
+      guardMajorAction(`เปลี่ยนสถานะเป็น ${chip.textContent.trim()}`, () => {
+        document.querySelectorAll('.filter-chip.status-chip').forEach(c => c.classList.remove('active'));
+        if (newVal) chip.classList.add('active');
+        activeStatusFilter = newVal;
+        renderTxnList();
+      });
+    });
+  });
+  document.getElementById('custom-date-apply').addEventListener('click', () => {
+    customDateRange.start = document.getElementById('custom-date-start').value || null;
+    customDateRange.end = document.getElementById('custom-date-end').value || null;
+    if (customDateRange.start && customDateRange.end && customDateRange.start > customDateRange.end) {
+      toast('⚠ วันเริ่มต้องไม่หลังวันสุดท้าย', 'error'); return;
+    }
+    renderTxnList();
+    toast(customDateRange.start && customDateRange.end ? `Filter ${customDateRange.start} → ${customDateRange.end}` : 'Custom range cleared');
+  });
+  document.getElementById('custom-date-clear').addEventListener('click', () => {
+    customDateRange = { start: null, end: null };
+    document.getElementById('custom-date-start').value = '';
+    document.getElementById('custom-date-end').value = '';
+    renderTxnList();
+  });
+}
+
+function wireModalsAndParty() {
+  // Topbar party registry open
+  const openBtn = document.getElementById('open-party-registry');
+  const openHandler = () => guardMajorAction('เปิด Party Registry', () => openPartyRegistry());
+  openBtn.addEventListener('click', openHandler);
+  openBtn.addEventListener('touchend', (e) => { e.preventDefault(); openHandler(); });
+
+  // Close any modal via [data-close-modal]
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    const target = btn.dataset.closeModal;
+    const closeHandler = () => {
+      document.getElementById(target).classList.remove('show');
+      if (target === 'party-registry-modal') {
+        partyPickerPendingSelect = false;
+        document.getElementById('party-form-area').innerHTML = '';
+      }
+    };
+    btn.addEventListener('click', closeHandler);
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); closeHandler(); });
+  });
+
+  // Click overlay (outside modal) → close
+  document.querySelectorAll('.modal-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov) {
+        ov.classList.remove('show');
+        if (ov.id === 'party-registry-modal') {
+          partyPickerPendingSelect = false;
+          document.getElementById('party-form-area').innerHTML = '';
+        }
+      }
+    });
+  });
+
+  // "+ เพิ่ม Party ใหม่" in registry
+  const addBtn = document.getElementById('add-party-btn');
+  const addHandler = () => openPartyForm();
+  addBtn.addEventListener('click', addHandler);
+  addBtn.addEventListener('touchend', (e) => { e.preventDefault(); addHandler(); });
+
+  // Party picker: select change
+  document.getElementById('f-party-select').addEventListener('change', (e) => {
+    formState.partyId = e.target.value || null;
+    renderPartySelectedInfo();
+    updateSubmitState();
+  });
+
+  // Party picker: "+ เพิ่ม Party ใหม่" link → open registry → new form
+  const pickAdd = document.getElementById('f-party-add-new');
+  const pickAddHandler = () => {
+    partyPickerPendingSelect = true;
+    openPartyRegistry();
+    openPartyForm();
+  };
+  pickAdd.addEventListener('click', pickAddHandler);
+  pickAdd.addEventListener('touchend', (e) => { e.preventDefault(); pickAddHandler(); });
+
+  // Save guard wiring
+  document.getElementById('save-now-btn')?.addEventListener('click', simulateSave);
+  window.addEventListener('beforeunload', (e) => {
+    if (dirtyChanges.length > 0 && !isReadOnly) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+  document.getElementById('take-over-btn')?.addEventListener('click', () => {
+    if (typeof takeOver === 'function') takeOver();
+  });
+}
+
+// v7.1 P3 — Font size persist
+const FS_KEY = '5mt_font_size';
+function applyFontSize(size) {
+  const valid = ['s', 'm', 'l', 'xl'];
+  const v = valid.includes(size) ? size : 'm';
+  const html = document.documentElement;
+  valid.forEach(k => html.classList.remove('fs-' + k));
+  html.classList.add('fs-' + v);
+  document.querySelectorAll('.fs-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-fs') === v);
+  });
+  try { localStorage.setItem(FS_KEY, v); } catch (e) {}
+}
+function wireFontSize() {
+  document.querySelectorAll('.fs-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyFontSize(btn.getAttribute('data-fs')));
+  });
+  let saved = 'm';
+  try { saved = localStorage.getItem(FS_KEY) || 'm'; } catch (e) {}
+  applyFontSize(saved);
+}
+
+function wirePresetRegistry() {
+  // Topbar preset registry open
+  const openBtn = document.getElementById('open-preset-registry');
+  if (openBtn) {
+    const h = () => guardMajorAction('เปิด Preset Registry', () => openPresetRegistry());
+    openBtn.addEventListener('click', h);
+    openBtn.addEventListener('touchend', (e) => { e.preventDefault(); h(); });
+  }
+  // "⊕ เพิ่ม Preset ใหม่" in registry
+  const addBtn = document.getElementById('add-preset-btn');
+  if (addBtn) {
+    const h = () => openPresetForm();
+    addBtn.addEventListener('click', h);
+    addBtn.addEventListener('touchend', (e) => { e.preventDefault(); h(); });
+  }
+  // Close preset modal handlers — use existing [data-close-modal] + overlay patterns
+  // (wireModalsAndParty already wires .modal-overlay click-outside)
+
+  // Event delegation: change on .preset-picker → autofill adjacent input
+  document.addEventListener('change', (e) => {
+    if (!e.target.classList || !e.target.classList.contains('preset-picker')) return;
+    const sel = e.target;
+    const pid = sel.value;
+    const wrap = sel.closest('.amount-with-preset');
+    if (!wrap) return;
+    const input = wrap.querySelector('input[type="number"]');
+    if (!input) return;
+    if (!pid) return;
+    const preset = getPresetById(pid);
+    if (!preset) return;
+    input.value = preset.amount;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    // trigger downstream updates for main form
+    if (typeof updateSubmitState === 'function' && input.id === 'f-amount') updateSubmitState();
+  });
+
+  // Event delegation: click "+ เพิ่ม Preset" → open registry + form, remember target input
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('[data-preset-add-for]');
+    if (!btn) return;
+    e.preventDefault();
+    // find adjacent amount input (same .amount-with-preset wrapper)
+    const wrap = btn.closest('.amount-with-preset');
+    const input = wrap ? wrap.querySelector('input[type="number"]') : null;
+    presetPickerPendingTarget = input || null;
+    presetPickerPendingSelect = btn.dataset.presetAddFor || null;
+    openPresetRegistry();
+    openPresetForm();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  seedParties();
+  seedPresets();
+  wireForm();
+  wireFilters();
+  wireModalsAndParty();
+  wirePresetRegistry();
+  wireFontSize();
+  initMultiTab();
+  seedTransactions();
+  renderTxnList();
+  renderCounts();
+  renderPartyList();
+  updatePartyCount();
+  updatePresetCount();
+  refreshAllPresetPickers();
+  clearDirty();
+  document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+});
+</script>
+
+</body>
+</html>
